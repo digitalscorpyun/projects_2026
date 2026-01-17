@@ -1,0 +1,124 @@
+{
+    "timestamp": "2026-01-16 08:54:20",
+    "system_identity": {
+        "hostname": "Anacostia",
+        "os": "Windows",
+        "version": "10.0.26200",
+        "processor": "Intel64 Family 6 Model 126 Stepping 5, GenuineIntel"
+    },
+    "health_pulse": {
+        "cpu_percent": 36.2,
+        "ram_percent": 93.7,
+        "disk_percent": 84.6,
+        "battery_percent": 100,
+        "power_plugged": true
+    },
+    "recent_system_errors": [
+        {
+            "TimeGenerated": "/Date(1768582436000)/",
+            "Source": "Microsoft-Windows-TPM-WMI",
+            "Message": "Updated Secure Boot certificates are available on this device but have not yet been applied to the firmware. Review the published guidance to complete the update and maintain full protection. This device signature information is included here.\r\nDeviceAttributes: FirmwareManufacturer:Insyde;FirmwareVersion:F.58;OEMModelBaseBoard:85F3;OEMManufacturerName:HP;OSArchitecture:amd64;\r\nBucketId: 87bf517242abed8ff7162abaaa2c9567048b243b088d6bd5dce1af8b52f6971e\r\nBucketConfidenceLevel: \r\nUpdateType: \r\nFor more information, please see https://go.microsoft.com/fwlink/?linkid=2301018."
+        },
+        {
+            "TimeGenerated": "/Date(1768582180000)/",
+            "Source": "Service Control Manager",
+            "Message": "A timeout (30000 milliseconds) was reached while waiting for a transaction response from the hp-one-agent-service service."
+        },
+        {
+            "TimeGenerated": "/Date(1768581653000)/",
+            "Source": "Service Control Manager",
+            "Message": "The mbamchameleon service failed to start due to the following error: \r\n%%2"
+        },
+        {
+            "TimeGenerated": "/Date(1768581012000)/",
+            "Source": "Microsoft-Windows-TPM-WMI",
+            "Message": "Updated Secure Boot certificates are available on this device but have not yet been applied to the firmware. Review the published guidance to complete the update and maintain full protection. This device signature information is included here.\r\nDeviceAttributes: FirmwareManufacturer:Insyde;FirmwareVersion:F.58;OEMModelBaseBoard:85F3;OEMManufacturerName:HP;OSArchitecture:amd64;\r\nBucketId: 87bf517242abed8ff7162abaaa2c9567048b243b088d6bd5dce1af8b52f6971e\r\nBucketConfidenceLevel: \r\nUpdateType: \r\nFor more information, please see https://go.microsoft.com/fwlink/?linkid=2301018."
+        },
+        {
+            "TimeGenerated": "/Date(1768580616000)/",
+            "Source": "Service Control Manager",
+            "Message": "The mbamchameleon service failed to start due to the following error: \r\n%%2"
+        }
+    ]
+}
+==================================================
+{
+    "timestamp": "2026-01-16 09:20:08",
+    "system_identity": {
+        "hostname": "Anacostia",
+        "os": "Windows",
+        "version": "10.0.26200",
+        "processor": "Intel64 Family 6 Model 126 Stepping 5, GenuineIntel"
+    },
+    "health_pulse": {
+        "cpu_percent": 67.8,
+        "ram_percent": 87.6,
+        "disk_percent": 83.0,
+        "battery_percent": 100,
+        "power_plugged": true
+    },
+    "recent_system_errors": [
+        {
+            "TimeGenerated": "/Date(1768583789000)/",
+            "Source": "Microsoft-Windows-TPM-WMI",
+            "Message": "Updated Secure Boot certificates are available on this device but have not yet been applied to the firmware. Review the published guidance to complete the update and maintain full protection. This device signature information is included here.\r\nDeviceAttributes: FirmwareManufacturer:Insyde;FirmwareVersion:F.58;OEMModelBaseBoard:85F3;OEMManufacturerName:HP;OSArchitecture:amd64;\r\nBucketId: 87bf517242abed8ff7162abaaa2c9567048b243b088d6bd5dce1af8b52f6971e\r\nBucketConfidenceLevel: \r\nUpdateType: \r\nFor more information, please see https://go.microsoft.com/fwlink/?linkid=2301018."
+        },
+        {
+            "TimeGenerated": "/Date(1768583450000)/",
+            "Source": "Service Control Manager",
+            "Message": "The mbamchameleon service failed to start due to the following error: \r\n%%2"
+        },
+        {
+            "TimeGenerated": "/Date(1768582436000)/",
+            "Source": "Microsoft-Windows-TPM-WMI",
+            "Message": "Updated Secure Boot certificates are available on this device but have not yet been applied to the firmware. Review the published guidance to complete the update and maintain full protection. This device signature information is included here.\r\nDeviceAttributes: FirmwareManufacturer:Insyde;FirmwareVersion:F.58;OEMModelBaseBoard:85F3;OEMManufacturerName:HP;OSArchitecture:amd64;\r\nBucketId: 87bf517242abed8ff7162abaaa2c9567048b243b088d6bd5dce1af8b52f6971e\r\nBucketConfidenceLevel: \r\nUpdateType: \r\nFor more information, please see https://go.microsoft.com/fwlink/?linkid=2301018."
+        },
+        {
+            "TimeGenerated": "/Date(1768582180000)/",
+            "Source": "Service Control Manager",
+            "Message": "A timeout (30000 milliseconds) was reached while waiting for a transaction response from the hp-one-agent-service service."
+        },
+        {
+            "TimeGenerated": "/Date(1768581653000)/",
+            "Source": "Service Control Manager",
+            "Message": "The mbamchameleon service failed to start due to the following error: \r\n%%2"
+        }
+    ]
+}
+==================================================
+{
+    "timestamp": "2026-01-16 09:32:16",
+    "system_identity": {
+        "hostname": "Anacostia",
+        "os": "Windows",
+        "version": "10.0.26200",
+        "processor": "Intel64 Family 6 Model 126 Stepping 5, GenuineIntel"
+    },
+    "health_pulse": {
+        "cpu_percent": 34.0,
+        "ram_percent": 83.7,
+        "disk_percent": 83.0,
+        "battery_percent": 100,
+        "power_plugged": true
+    },
+    "recent_system_errors": "No recent errors."
+}
+==================================================
+{
+    "timestamp": "2026-01-16 10:25:54",
+    "system_identity": {
+        "hostname": "Anacostia",
+        "os": "Windows",
+        "version": "10.0.26200",
+        "processor": "Intel64 Family 6 Model 126 Stepping 5, GenuineIntel"
+    },
+    "health_pulse": {
+        "cpu_percent": 36.7,
+        "ram_percent": 87.4,
+        "disk_percent": 78.9,
+        "battery_percent": 100,
+        "power_plugged": true
+    },
+    "recent_system_errors": "No recent errors."
+}
+==================================================
