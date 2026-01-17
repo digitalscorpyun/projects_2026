@@ -1,0 +1,38 @@
+# ==============================================================================
+# ✶⌁✶ projects_2026 Canonical GitIgnore [HARDENED]
+# ==============================================================================
+
+# --- Python Logic Artifacts ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.ipynb_checkpoints/
+
+# --- VS Code Infrastructure ---
+.vscode/
+.history/
+*.code-workspace
+
+# --- OS Specific Drift (Windows/Mac) ---
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# --- Anacostia Sovereign Logs ---
+# Rationale: Local system health logs must not be leaked to public repositories.
+vault_logs/
+*.log
+
+# --- Project Specific Artifacts ---
+# Rationale: Preventing the upload of temporary bytecode or large binary leftovers.
+crash_course_projects/**/__pycache__/
