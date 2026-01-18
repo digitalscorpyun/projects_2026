@@ -7,12 +7,11 @@ class Ship():
         self.screen = screen
 
         # Load the ship image and get its rect.
-        self.image = pygame.image.load('images/ship.bmp')
+        self.image = pygame.image.load('images/ship.png')
         
         # --- THE NORMALIZATION STRIKE ---
         # Rationale: Neutralizes the white bounding box (255, 255, 255).
         # This ensures the asset adapts to the 'bg_color' without manual editing.
-        self.image.set_colorkey((255, 255, 255)) 
         # --------------------------------
 
         self.rect = self.image.get_rect()
