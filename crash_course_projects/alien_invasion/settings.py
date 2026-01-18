@@ -6,9 +6,7 @@ class Settings():
         # Screen settings
         self.screen_width = 1200
         self.screen_height = 800
-        
-        # --- THE NORMALIZATION STRIKE ---
-        # Rationale: Neutralizes the fringe artifacts (edge noise) in ship.bmp.
-        # Aligns the game environment to the asset's native background.
         self.bg_color = (255, 255, 255)
-        # --------------------------------
+        
+        # Ship settings
+        self.ship_speed_factor = 1.5
