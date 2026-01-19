@@ -7,7 +7,6 @@ import game_functions as gf
 
 def run_game():
     # Initialize pygame, settings, and screen object.
-    # Rationale: Establishing the 'Known Good State' of the environment.
     pygame.init()
     ai_settings = Settings()
     screen = pygame.display.set_mode(
@@ -24,22 +23,9 @@ def run_game():
     # Start the main loop for the game.
     while True:
         # Check for keyboard/mouse events (The Dispatcher)
-        gf.check_events(ai_settings, screen, ship, bullets)
-        
-        # Update the ship's position (The Engine)
+        gf.check_events(ai_settings, screen, ship, bullets)        
         ship.update()
-        
-        # Update bullet positions (The Ballistic Strike)
-        # Rationale: Group.update() automatically calls update() on every bullet in the group.
-        bullets.update()
-
-        # Get rid of bullets that have disappeared.
-        for bullet in bullets.copy():
-            if bullet.rect.bottom <= 0:
-                bullets.remove(bullet)
-                
-        # Redraw the screen (The Visualizer)
-        # FIX: Synchronized with the 4-argument signature in game_functions.py.
+        gf.update_bullets(bullets)
         gf.update_screen(ai_settings, screen, ship, bullets)
 
 run_game()
