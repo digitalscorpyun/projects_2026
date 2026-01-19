@@ -1,0 +1,145 @@
+{
+    "cutoff_days": 14,
+    "reject_undated": false,
+    "min_words": 200,
+    "concurrency": 12,
+    "timeout_sec": 25,
+    "keywords": [
+        "Black",
+        "Culture",
+        "Global",
+        "Tech",
+        "History",
+        "Sovereignty",
+        "AI"
+    ],
+    "sources": [
+        {
+            "name": "NYT",
+            "url": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
+        },
+        {
+            "name": "BBC Tech",
+            "url": "http://feeds.bbci.co.uk/news/technology/rss.xml"
+        },
+        {
+            "name": "USA Today",
+            "url": "http://rssfeeds.usatoday.com/usatoday-NewsTopStories"
+        },
+        {
+            "name": "Washington Post",
+            "url": "https://feeds.washingtonpost.com/rss/world"
+        },
+        {
+            "name": "The Guardian (AI)",
+            "url": "https://www.theguardian.com/technology/artificialintelligence/rss"
+        },
+        {
+            "name": "Financial Times (AI)",
+            "url": "https://www.ft.com/artificial-intelligence?format=rss"
+        },
+        {
+            "name": "CNN",
+            "url": "http://rss.cnn.com/rss/cnn_topstories.rss"
+        },
+        {
+            "name": "Thegrio",
+            "url": "https://thegrio.com/feed/"
+        },
+        {
+            "name": "Theroot",
+            "url": "https://www.theroot.com/rss"
+        },
+        {
+            "name": "Andscape",
+            "url": "https://andscape.com/feed/"
+        },
+        {
+            "name": "Semafor",
+            "url": "https://www.semafor.com/feed"
+        },
+        {
+            "name": "Ground News",
+            "url": "https://ground.news/"
+        },
+        {
+            "name": "LeMonde",
+            "url": "https://www.lemonde.fr/en/rss/une.xml"
+        },
+        {
+            "name": "Blackenterprise",
+            "url": "https://www.blackenterprise.com/feed/"
+        },
+        {
+            "name": "Atlantablackstar",
+            "url": "https://atlantablackstar.com/feed/"
+        },
+        {
+            "name": "Blackgirlnerds",
+            "url": "https://blackgirlnerds.com/feed/"
+        },
+        {
+            "name": "Artificialintelligence News",
+            "url": "https://www.artificialintelligence-news.com/feed/"
+        },
+        {
+            "name": "Huggingface Blog",
+            "url": "https://huggingface.co/blog/feed.xml"
+        },
+        {
+            "name": "Myafricanmagazine",
+            "url": "https://myafricanmagazine.com/feed/"
+        },
+        {
+            "name": "Newsone",
+            "url": "https://newsone.com/feed/"
+        },
+        {
+            "name": "Blavity",
+            "url": "https://blavity.com/feed"
+        },
+        {
+            "name": "Huffpost Black Voices",
+            "url": "https://www.huffpost.com/section/black-voices/feed"
+        },
+        {
+            "name": "Corriere della Sera",
+            "url": "https://xml2.corriereobjects.it/rss/english.xml"
+        },
+        {
+            "name": "LATimes Politics",
+            "url": "https://www.latimes.com/politics/rss2.0.xml"
+        },
+        {
+            "name": "Forbes AI",
+            "url": "https://www.forbes.com/ai",
+            "article_selector": "article a, .stream-item__title a"
+        },
+        {
+            "name": "IBM AI Topics",
+            "url": "https://www.ibm.com/topics/artificial-intelligence",
+            "article_selector": "article a, .component-content a"
+        },
+        {
+            "name": "GitHub Afro-AI",
+            "url": "https://github.com/topics/afrocentric-ai",
+            "article_selector": "h3 a"
+        },
+        {
+            "name": "OpenAI Community",
+            "url": "https://community.openai.com/latest",
+            "article_selector": "tr.topic a, div.title a"
+        },
+        {
+            "name": "Guides AI",
+            "url": "https://guides.ai/",
+            "article_selector": "article a, h2 a"
+        },
+        {
+            "name": "Contrabandcamp",
+            "url": "https://www.contrabandcamp.com/",
+            "article_selector": "article a, .post-title a"
+        }
+    ],
+    "output_csv": "lion_scraper_output.csv"
+}
