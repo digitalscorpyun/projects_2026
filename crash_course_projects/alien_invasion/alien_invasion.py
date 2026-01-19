@@ -32,7 +32,12 @@ def run_game():
         # Update bullet positions (The Ballistic Strike)
         # Rationale: Group.update() automatically calls update() on every bullet in the group.
         bullets.update()
-        
+
+        # Get rid of bullets that have disappeared.
+        for bullet in bullets.copy():
+            if bullet.rect.bottom <= 0:
+                bullets.remove(bullet)
+                
         # Redraw the screen (The Visualizer)
         # FIX: Synchronized with the 4-argument signature in game_functions.py.
         gf.update_screen(ai_settings, screen, ship, bullets)
