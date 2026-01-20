@@ -1,5 +1,6 @@
-# settings.py
-
+# ==============================================================================
+# ✶⌁✶ settings.py — THE INVADER ENGINE v1.0.2 [HARDENED]
+# ==============================================================================
 class Settings():
     """A class to store all settings for Alien Invasion."""
 
