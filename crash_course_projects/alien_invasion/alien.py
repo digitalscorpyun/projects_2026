@@ -1,5 +1,5 @@
 # ==============================================================================
-# ✶⌁✶ alien.py — THE INVADER ENGINE v1.1.0 [HARDENED]
+# ✶⌁✶ alien.py — THE INVADER ENGINE v1.3.0 [HARDENED]
 # ==============================================================================
 import pygame
 from pygame.sprite import Sprite
@@ -13,25 +13,26 @@ class Alien(Sprite):
         self.screen = screen
         self.ai_settings = ai_settings
 
-        # 1. THE ALPHA HANDSHAKE
-        # Load and prepare transparency metadata.
-        original_image = pygame.image.load('images/alien.png').convert_alpha()
+        # 1. THE DETERMINISTIC LOAD
+        original_image = pygame.image.load('images/alien.jpg').convert()
 
-        # 2. THE SMOOTH STRIKE
-        # Rationale: Re-scaling the massive 860x948 asset to a manageable 60x60.
-        self.image = pygame.transform.smoothscale(original_image, (60, 60))
+        # 2. THE SAMPLER PROTOCOL
+        # Rationale: Instead of assuming (255,255,255), we sample the pixel 
+        # at (0,0). This ensures the background is keyed regardless of its 
+        # exact RGB value.
+        bg_color_sample = original_image.get_at((0, 0))
+        original_image.set_colorkey(bg_color_sample)
 
-        # 3. THE REINFORCEMENT FILTER
-        # Rationale: Final sweep to nuke any residual 'off-white' fringe noise.
-        self.image.set_colorkey((255, 255, 255))
+        # 3. THE SCALE STRIKE
+        # Rationale: Standard 'scale' is used here instead of 'smoothscale'
+        # to prevent the math from creating new 'fringe' colors.
+        self.image = pygame.transform.scale(original_image, (60, 60))
 
         self.rect = self.image.get_rect()
 
         # Start each new alien near the top left of the screen.
         self.rect.x = self.rect.width
         self.rect.y = self.rect.height
-        
-        # Store the alien's exact position.
         self.x = float(self.rect.x)
 
     def blitme(self):
