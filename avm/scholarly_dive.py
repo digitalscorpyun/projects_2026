@@ -10,7 +10,7 @@ import os
 import sys
 import re
 import json
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Tuple
 from datetime import timedelta, timezone
 
 from watsonx_client import WatsonXClient
