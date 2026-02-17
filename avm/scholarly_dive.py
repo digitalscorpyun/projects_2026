@@ -1,5 +1,5 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — THE SYNTHESIS ENGINE v1.7.0 [HARDENED+CRITICAL]
+# ✶⌁✶ scholarly_dive.py — THE SYNTHESIS ENGINE v1.7.1 [HARDENED+CRITICAL]
 # ==============================================================================
 # ROLE: Deep synthesis client with loop prevention, env-hardening, and
 #       anti-hagiography historiography constraints.
@@ -11,7 +11,7 @@ import sys
 import re
 import json
 from typing import Any, Dict, Tuple
-from datetime import timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from watsonx_client import WatsonXClient
 from vs_enc import VSEncOrchestrator
@@ -23,14 +23,18 @@ if not os.getenv("WATSONX_PROJECT_ID"):
     print("❌ ERROR: WATSONX_PROJECT_ID missing.")
     sys.exit(1)
 
-PST = timezone(timedelta(hours=-8))
+DEFAULT_AGENT = os.getenv("SCHOLARLY_DIVE_AGENT", "QWEN-ECHO")
+if not re.fullmatch(r"[A-Z0-9_\-]{2,40}", DEFAULT_AGENT):
+    print("❌ ERROR: SCHOLARLY_DIVE_AGENT invalid format (expected A-Z/0-9/_/- 2..40 chars).")
+    sys.exit(1)
+
+PACIFIC = ZoneInfo("America/Los_Angeles")
 ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
+os.makedirs(ARTIFACT_DIR, exist_ok=True)
 
 # ------------------------------------------------------------------------------
 # PROMPT LAW (Anti-hagiography / Historiography-first)
 # ------------------------------------------------------------------------------
-DEFAULT_AGENT = os.getenv("SCHOLARLY_DIVE_AGENT", "QWEN-ECHO")
-
 PROMPT_TEMPLATE = """\
 ROLE: You are the Algorithmic Griot.
 TASK: Produce a rigorous scholarly synthesis on: {topic}
@@ -70,9 +74,30 @@ METADATA:
 def _safe_json_loads(maybe_json: str) -> Dict[str, Any]:
     """Attempt to parse JSON safely; return {} on failure."""
     try:
-        return json.loads(maybe_json)
+        obj = json.loads(maybe_json)
+        return obj if isinstance(obj, dict) else {}
     except Exception:
         return {}
+
+
+def _extract_first_json_object(text: str) -> str:
+    """
+    Extracts the first balanced JSON object (starting at the first '{') from text.
+    Uses a brace-balance scan to avoid greedy regex failures.
+    """
+    start = text.find("{")
+    if start == -1:
+        return ""
+    depth = 0
+    for i in range(start, len(text)):
+        ch = text[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : i + 1]
+    return ""
 
 
 def _extract_metadata(raw_response: str) -> Tuple[str, Dict[str, Any]]:
@@ -90,12 +115,11 @@ def _extract_metadata(raw_response: str) -> Tuple[str, Dict[str, Any]]:
     body_content = parts[0].strip()
     tail = parts[1]
 
-    # Prefer the first balanced JSON object in the tail.
-    found_json = re.search(r"\{.*\}", tail, re.DOTALL)
-    if not found_json:
+    json_blob = _extract_first_json_object(tail)
+    if not json_blob:
         return body_content, meta_json
 
-    meta_json = _safe_json_loads(found_json.group())
+    meta_json = _safe_json_loads(json_blob)
     return body_content, meta_json
 
 
@@ -114,8 +138,14 @@ def _get_topic() -> str:
     return topic
 
 
+def _escape_braces(s: str) -> str:
+    """Prevent str.format() injection/KeyError if topic contains braces."""
+    return s.replace("{", "{{").replace("}", "}}")
+
+
 def _build_prompt(topic: str) -> str:
-    return PROMPT_TEMPLATE.format(topic=topic)
+    safe_topic = _escape_braces(topic)
+    return PROMPT_TEMPLATE.format(topic=safe_topic)
 
 
 # ------------------------------------------------------------------------------
@@ -152,7 +182,7 @@ class StubAgent:
 # Main Workflow
 # ------------------------------------------------------------------------------
 def run_synthesis() -> None:
-    version = "v1.7.0"
+    version = "v1.7.1"
     print(f"✶⌁✶ SCHOLARLY DIVE {version} [HARDENED+CRITICAL] ONLINE")
 
     try:
@@ -162,13 +192,28 @@ def run_synthesis() -> None:
         if _prompt_user_yes_no("Use historiography-first (anti-hagiography) prompt?", default=True):
             prompt = _build_prompt(topic)
         else:
-            # Operator override: minimal legacy prompt (still structured, but less strict)
+            # Operator override: lighter structure, but still governed (non-negotiables remain).
             prompt = f"""
 ROLE: You are the Algorithmic Griot.
-TASK: Provide a deep scholarly synthesis on {topic}.
-STRUCTURE: # Abstract, # Historical Analysis [^1], # Semiotic Analysis, # 📚 BIBLIOGRAPHY.
-CITATIONS: Use standard Markdown [^1]: Author, Year.
-METADATA: Provide JSON labeled '### METADATA' at the absolute end.
+TASK: Provide a deep scholarly synthesis on: {topic}
+
+NON-NEGOTIABLE:
+- Historiography > hagiography.
+- Separate claims from outcomes in practice.
+- If uncertain, say "uncertain" rather than inventing details.
+
+STRUCTURE:
+# Abstract
+# Historical Analysis [^1]
+# Semiotic Analysis
+# 📚 BIBLIOGRAPHY
+
+CITATIONS:
+- Use Markdown footnotes [^1] in the body.
+- In bibliography: [^1]: Author. *Title* (Publisher, Year).
+
+METADATA:
+- Provide JSON labeled '### METADATA' at the absolute end.
 """.strip()
 
         synapse = ScholarlySynapse(agent_name=DEFAULT_AGENT)
@@ -178,6 +223,9 @@ METADATA: Provide JSON labeled '### METADATA' at the absolute end.
         raw_response = synapse.ask(prompt)
 
         body_content, meta_json = _extract_metadata(raw_response)
+
+        if not body_content.strip():
+            raise ValueError("Model returned empty body content; refusing emission.")
 
         # Enforce allowed metadata keys to prevent schema drift through model output.
         allowed_meta_keys = {
