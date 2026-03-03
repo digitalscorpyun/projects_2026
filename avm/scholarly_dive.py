@@ -3,8 +3,8 @@
 # ==============================================================================
 # ROLE: Deep synthesis client with strict post-LLM validation + safe emission gate.
 # GOAL: Stop fabricated bibliography + enforce metadata shape before VS-ENC emits.
-# MODE (v1.8.1): OPTION 1 ENABLED — allow emission by marking suspicious bib items UNVERIFIED.
 # COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
+# DEFAULT: ALWAYS historiography-first (no operator prompt).
 # ==============================================================================
 
 from __future__ import annotations
@@ -29,26 +29,23 @@ if not os.getenv("WATSONX_PROJECT_ID"):
 
 DEFAULT_AGENT = os.getenv("SCHOLARLY_DIVE_AGENT", "QWEN-ECHO")
 if not re.fullmatch(r"[A-Z0-9_\-]{2,40}", DEFAULT_AGENT):
-    print("❌ ERROR: SCHOLARLY_DIVE_AGENT invalid format (expected A-Z/0-9/_/- 2..40 chars).")
+    print(
+        "❌ ERROR: SCHOLARLY_DIVE_AGENT invalid format "
+        "(expected A-Z/0-9/_/- 2..40 chars)."
+    )
     sys.exit(1)
 
-PACIFIC = ZoneInfo("America/Los_Angeles")
+PACIFIC = ZoneInfo("America/Los_Angeles")  # reserved for future timestamp needs
 ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
 os.makedirs(ARTIFACT_DIR, exist_ok=True)
 
 # Strictness knobs (operator override via env vars)
-STRICT_BIBLIO = os.getenv("SCHOLARLY_STRICT_BIBLIO", "1") == "1"  # detect invented bibliography
-STRICT_META = os.getenv("SCHOLARLY_STRICT_META", "1") == "1"  # detect malformed metadata shapes
-RETRY_ON_FAIL = int(os.getenv("SCHOLARLY_RETRY_ON_FAIL", "1"))  # number of auto-repair attempts
-
-# OPTION 1: allow emission by marking suspicious bibliography entries as UNVERIFIED.
-ALLOW_UNVERIFIED_BIBLIO = os.getenv("SCHOLARLY_ALLOW_UNVERIFIED_BIBLIO", "1") == "1"
-
-UNVERIFIED_BIB_MARKER = "UNVERIFIED (model-generated; needs source check)"
-
+STRICT_BIBLIO = os.getenv("SCHOLARLY_STRICT_BIBLIO", "1") == "1"
+STRICT_META = os.getenv("SCHOLARLY_STRICT_META", "1") == "1"
+RETRY_ON_FAIL = int(os.getenv("SCHOLARLY_RETRY_ON_FAIL", "1"))
 
 # ------------------------------------------------------------------------------
-# PROMPT LAW (Anti-hagiography / Historiography-first)
+# PROMPT LAW (Always historiography-first)
 # ------------------------------------------------------------------------------
 PROMPT_TEMPLATE = """\
 ROLE: You are the Algorithmic Griot.
@@ -96,7 +93,6 @@ METADATA:
   - adinkra: list[string]
 """
 
-
 REPAIR_TEMPLATE = """\
 ROLE: You are the Algorithmic Griot.
 TASK: Repair the previous output to satisfy ALL constraints below.
@@ -115,7 +111,6 @@ PREVIOUS OUTPUT (for repair):
 {bad_output}
 """
 
-
 # ------------------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------------------
@@ -128,18 +123,18 @@ def _safe_json_loads(maybe_json: str) -> Dict[str, Any]:
 
 
 def _extract_first_json_object(text: str) -> str:
-    start_idx = text.find("{")
-    if start_idx == -1:
+    start = text.find("{")
+    if start == -1:
         return ""
     depth = 0
-    for idx in range(start_idx, len(text)):
-        ch = text[idx]
+    for i in range(start, len(text)):
+        ch = text[i]
         if ch == "{":
             depth += 1
         elif ch == "}":
             depth -= 1
             if depth == 0:
-                return text[start_idx : idx + 1]
+                return text[start : i + 1]
     return ""
 
 
@@ -162,14 +157,6 @@ def _extract_metadata(raw_response: str) -> Tuple[str, Dict[str, Any]]:
     return body_content, meta_json
 
 
-def _prompt_user_yes_no(prompt: str, default: bool = False) -> bool:
-    suffix = " [Y/n]: " if default else " [y/N]: "
-    ans = input(prompt + suffix).strip().lower()
-    if not ans:
-        return default
-    return ans in {"y", "yes"}
-
-
 def _get_topic() -> str:
     topic = input("Enter Research Topic: ").strip()
     if not topic:
@@ -177,8 +164,8 @@ def _get_topic() -> str:
     return topic
 
 
-def _escape_braces(text: str) -> str:
-    return text.replace("{", "{{").replace("}", "}}")
+def _escape_braces(s: str) -> str:
+    return s.replace("{", "{{").replace("}", "}}")
 
 
 def _build_prompt(topic: str) -> str:
@@ -207,8 +194,8 @@ def _ensure_str(value: Any) -> Optional[str]:
 
 def _looks_like_fabricated_biblio_line(line: str) -> bool:
     """
-    Heuristic only (no web): flags common hallucination patterns.
-    We treat these as "suspicious", not "proven false".
+    Heuristic-only (no web). Flags common hallucination patterns.
+    NOTE: This will cause false positives; you can relax STRICT_BIBLIO via env var.
     """
     line_lc = line.lower()
     suspicious_markers = [
@@ -216,148 +203,70 @@ def _looks_like_fabricated_biblio_line(line: str) -> bool:
         "working paper",
         "policy brief no.",
         "annual report",
+        "update",
         "transcript #",
-        "case no.",
         "case",
         "no.",
-        "vol.",
-        "pp.",
     ]
     has_year = bool(re.search(r"\b(19|20)\d{2}\b", line))
-    has_marker = any(m in line_lc for m in suspicious_markers)
-    # Only flag if it looks citation-like AND time-stamped (typical hallucination shape).
-    return has_marker and has_year and line.strip().startswith("[^")
+    return any(m in line_lc for m in suspicious_markers) and has_year
 
 
-def _split_bibliography(body: str) -> Tuple[str, str]:
-    if "# 📚 BIBLIOGRAPHY" not in body:
-        return body, ""
-    before, after = body.split("# 📚 BIBLIOGRAPHY", 1)
-    return before.rstrip(), after.lstrip()
-
-
-def _collect_body_footnote_ids(body_without_biblio: str) -> List[str]:
-    # Unique, stable order.
-    found = re.findall(r"\[\^(\d+)\]", body_without_biblio)
-    seen: set[str] = set()
-    ordered: List[str] = []
-    for note_id in found:
-        if note_id not in seen:
-            seen.add(note_id)
-            ordered.append(note_id)
-    return ordered
-
-
-def _collect_biblio_footnote_ids(biblio_text: str) -> List[str]:
-    found = re.findall(r"^\[\^(\d+)\]:", biblio_text, flags=re.MULTILINE)
-    seen: set[str] = set()
-    ordered: List[str] = []
-    for note_id in found:
-        if note_id not in seen:
-            seen.add(note_id)
-            ordered.append(note_id)
-    return ordered
-
-
-def _sanitize_bibliography(body: str) -> Tuple[str, List[str]]:
+def _validate_bibliography(body: str) -> Tuple[bool, List[str]]:
     """
-    OPTION 1 IMPLEMENTATION:
-    - Replace suspicious bibliography entries with UNVERIFIED marker (keep same footnote id).
-    - Ensure every footnote referenced in body has a bibliography line; add UNVERIFIED if missing.
-    - Add a short note under the bibliography header if any UNVERIFIED entries exist.
-    """
-    before, biblio_text = _split_bibliography(body)
-    if not biblio_text:
-        return body, ["Missing '# 📚 BIBLIOGRAPHY' section."]
-
-    body_footnotes = _collect_body_footnote_ids(before)
-    biblio_lines = biblio_text.splitlines()
-
-    sanitized_lines: List[str] = []
-    notes: List[str] = []
-    unverified_ids: List[str] = []
-
-    footnote_line_re = re.compile(r"^\[\^(\d+)\]:(.*)$")
-
-    for raw_line in biblio_lines:
-        line = raw_line.rstrip()
-        match = footnote_line_re.match(line.strip())
-        if not match:
-            sanitized_lines.append(raw_line)
-            continue
-
-        note_id = match.group(1)
-        if _looks_like_fabricated_biblio_line(line):
-            sanitized_lines.append(f"[^${note_id}]: {UNVERIFIED_BIB_MARKER}".replace("^$", "^"))
-            unverified_ids.append(note_id)
-            notes.append(f"Marked [^{note_id}] as {UNVERIFIED_BIB_MARKER}.")
-        else:
-            sanitized_lines.append(raw_line)
-
-    # Ensure missing referenced footnotes are present in bibliography.
-    existing_ids = set(_collect_biblio_footnote_ids("\n".join(sanitized_lines)))
-    for note_id in body_footnotes:
-        if note_id not in existing_ids:
-            sanitized_lines.append(f"[^{note_id}]: {UNVERIFIED_BIB_MARKER}")
-            unverified_ids.append(note_id)
-            notes.append(f"Added missing bibliography entry for [^{note_id}] as {UNVERIFIED_BIB_MARKER}.")
-
-    # If we inserted any UNVERIFIED entries, add a note line right after the header.
-    if unverified_ids:
-        warning_line = (
-            f"**NOTE:** Some bibliography items are {UNVERIFIED_BIB_MARKER} "
-            f"(ids: {', '.join(sorted(set(unverified_ids), key=int))})."
-        )
-        # Place warning at top of bibliography section.
-        sanitized_block = "\n".join([warning_line, ""] + sanitized_lines).rstrip() + "\n"
-    else:
-        sanitized_block = "\n".join(sanitized_lines).rstrip() + "\n"
-
-    rebuilt = before + "\n\n# 📚 BIBLIOGRAPHY\n" + sanitized_block
-    return rebuilt, notes
-
-
-def _validate_bibliography(body: str) -> Tuple[bool, List[str], List[str]]:
-    """
-    Validates and returns:
-      - ok flag
-      - errors
-      - suspicious footnote ids
+    Enforces:
+    - bibliography section exists
+    - no obviously fabricated lines (heuristic)
+    - footnotes referenced exist in bibliography lines
     """
     errors: List[str] = []
-    suspicious_ids: List[str] = []
 
     if "# 📚 BIBLIOGRAPHY" not in body:
         errors.append("Missing '# 📚 BIBLIOGRAPHY' section.")
-        return False, errors, suspicious_ids
+        return False, errors
 
-    before, biblio_text = _split_bibliography(body)
-    biblio = biblio_text.strip()
+    biblio = body.split("# 📚 BIBLIOGRAPHY", 1)[1].strip()
     lines = [ln.strip() for ln in biblio.splitlines() if ln.strip()]
 
-    # Footnotes referenced in body must exist in bibliography.
-    refs = set(re.findall(r"\[\^(\d+)\]", before))
+    main = body.split("# 📚 BIBLIOGRAPHY", 1)[0]
+    refs = set(re.findall(r"\[\^(\d+)\]", main))
     bib_ids = set(re.findall(r"^\[\^(\d+)\]:", "\n".join(lines), flags=re.MULTILINE))
 
-    missing = sorted(refs - bib_ids, key=lambda x: int(x) if x.isdigit() else 10**9)
+    missing = sorted(refs - bib_ids)
     if missing:
-        errors.append(f"Footnotes referenced in body but missing from bibliography: {', '.join(missing)}")
+        errors.append(
+            "Footnotes referenced in body but missing from bibliography: "
+            + ", ".join(missing)
+        )
 
-    # Flag suspicious bibliography lines (heuristic)
     if STRICT_BIBLIO:
         for ln in lines:
             if ln.startswith("[^") and _looks_like_fabricated_biblio_line(ln):
-                match = re.match(r"^\[\^(\d+)\]:", ln)
-                if match:
-                    suspicious_ids.append(match.group(1))
                 errors.append(f"Suspicious bibliography entry (possible fabrication): {ln}")
 
-    return (len(errors) == 0), errors, suspicious_ids
+        # Also block "UNVERIFIED" flags (these are explicitly not acceptable in strict mode)
+        for ln in lines:
+            if "unverified" in ln.lower():
+                errors.append(f"Unverified bibliography entry not allowed in strict mode: {ln}")
+
+    return (len(errors) == 0), errors
 
 
 def _validate_metadata(meta: Dict[str, Any]) -> Tuple[bool, List[str], Dict[str, Any]]:
+    """
+    Enforces allowed keys + value shapes.
+    Coerces where safe (e.g., string -> [string] for list fields).
+    """
     errors: List[str] = []
-    allowed = {"title", "tags", "key_themes", "bias_analysis", "grok_ctx_reflection", "quotes", "adinkra"}
+    allowed = {
+        "title",
+        "tags",
+        "key_themes",
+        "bias_analysis",
+        "grok_ctx_reflection",
+        "quotes",
+        "adinkra",
+    }
     meta = {k: v for k, v in (meta or {}).items() if k in allowed}
 
     normalized: Dict[str, Any] = {}
@@ -366,26 +275,29 @@ def _validate_metadata(meta: Dict[str, Any]) -> Tuple[bool, List[str], Dict[str,
     if title:
         normalized["title"] = title
 
-    for key in ("tags", "key_themes", "adinkra"):
-        list_val = _ensure_list_of_str(meta.get(key))
-        if list_val is not None:
-            normalized[key] = list_val
-        elif meta.get(key) is not None:
-            errors.append(f"Metadata '{key}' must be list[string].")
+    for k in ("tags", "key_themes", "adinkra"):
+        lv = _ensure_list_of_str(meta.get(k))
+        if lv is not None:
+            normalized[k] = lv
+        elif meta.get(k) is not None:
+            errors.append(f"Metadata '{k}' must be list[string].")
 
-    for key in ("bias_analysis", "grok_ctx_reflection"):
-        str_val = _ensure_str(meta.get(key))
-        if str_val is not None:
-            normalized[key] = str_val
-        elif meta.get(key) is not None:
-            errors.append(f"Metadata '{key}' must be string.")
+    for k in ("bias_analysis", "grok_ctx_reflection"):
+        sv = _ensure_str(meta.get(k))
+        if sv is not None:
+            normalized[k] = sv
+        elif meta.get(k) is not None:
+            errors.append(f"Metadata '{k}' must be string.")
 
-    quotes_val = _ensure_list_of_str(meta.get("quotes"))
-    if quotes_val is not None:
-        bad_quotes = [q for q in quotes_val if ("—" not in q and " - " not in q and "(" not in q)]
-        if bad_quotes:
-            errors.append("Each quote must include attribution inside the same string (e.g. '... — Source').")
-        normalized["quotes"] = quotes_val
+    qv = _ensure_list_of_str(meta.get("quotes"))
+    if qv is not None:
+        bad = [q for q in qv if ("—" not in q and " - " not in q and "(" not in q)]
+        if bad:
+            errors.append(
+                "Each quote must include attribution inside the same string "
+                "(e.g. '... — Source')."
+            )
+        normalized["quotes"] = qv
     elif meta.get("quotes") is not None:
         errors.append("Metadata 'quotes' must be list[string].")
 
@@ -432,33 +344,8 @@ def run_synthesis() -> None:
     try:
         topic = _get_topic()
 
-        use_strict_prompt = _prompt_user_yes_no(
-            "Use historiography-first (anti-hagiography) prompt?", default=True
-        )
-
-        prompt = _build_prompt(topic) if use_strict_prompt else f"""
-ROLE: You are the Algorithmic Griot.
-TASK: Provide a deep scholarly synthesis on: {topic}
-
-NON-NEGOTIABLE:
-- Historiography > hagiography.
-- Separate claims from outcomes in practice.
-- If uncertain, say "uncertain" rather than inventing details.
-- You may ONLY include bibliography entries you are confident are real.
-
-STRUCTURE:
-# Abstract
-# Historical Analysis [^1]
-# Semiotic Analysis
-# 📚 BIBLIOGRAPHY
-
-CITATIONS:
-- Use Markdown footnotes [^1] in the body.
-- In bibliography: [^1]: Author. *Title* (Publisher, Year). OR "uncertain".
-
-METADATA:
-- Provide JSON labeled '### METADATA' at the absolute end.
-""".strip()
+        # Always historiography-first (removed operator prompt).
+        prompt = _build_prompt(topic)
 
         synapse = ScholarlySynapse(agent_name=DEFAULT_AGENT)
         orch = VSEncOrchestrator({"SCHOLARLY_STUB": StubAgent()})
@@ -471,24 +358,12 @@ METADATA:
         if not body.strip():
             raise ValueError("Model returned empty body content; refusing emission.")
 
+        # Validation pass (with optional auto-repair)
         attempts = 0
         while True:
             attempts += 1
-
-            ok_bib, bib_errors, suspicious_ids = _validate_bibliography(body)
+            ok_bib, bib_errors = _validate_bibliography(body)
             ok_meta, meta_errors, meta_norm = _validate_metadata(meta)
-
-            # OPTION 1: if bibliography is the only blocker and we allow unverified,
-            # sanitize instead of refusing.
-            if (not ok_bib) and ALLOW_UNVERIFIED_BIBLIO:
-                sanitized_body, sanitize_notes = _sanitize_bibliography(body)
-                body = sanitized_body
-                # Re-validate after sanitization
-                ok_bib, bib_errors, suspicious_ids = _validate_bibliography(body)
-                if sanitize_notes:
-                    # Keep operator awareness without polluting emitted artifact.
-                    for note in sanitize_notes[:12]:
-                        print(f"⚠️  {note}")
 
             hard_fail = (STRICT_BIBLIO and not ok_bib) or (STRICT_META and not ok_meta)
 
@@ -500,12 +375,12 @@ METADATA:
                 print("❌ REFUSING EMISSION: validation failed.")
                 if bib_errors:
                     print("— Bibliography issues:")
-                    for err in bib_errors:
-                        print(f"  • {err}")
+                    for e in bib_errors:
+                        print(f"  • {e}")
                 if meta_errors:
                     print("— Metadata issues:")
-                    for err in meta_errors:
-                        print(f"  • {err}")
+                    for e in meta_errors:
+                        print(f"  • {e}")
                 sys.exit(2)
 
             print("⚠️  Validation failed; attempting repair pass...")
