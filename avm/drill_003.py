@@ -6,3 +6,4 @@ import os
 log_setting = os.environ.get("LOG_LEVEL", "INFO")
 
 print(f"[SYNAPSE_LOG]: Level set to {log_setting}")
+

@@ -48,3 +48,4 @@ if __name__ == "__main__":
     print("\nGenerated Passphrase:\n")
     print(generate_passphrase())
     print("\n⚠️  Memorize or store securely. No recovery possible.\n")
+

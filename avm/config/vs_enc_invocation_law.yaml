@@ -1,0 +1,95 @@
+# VS-ENC Invocation Law (v1.1)
+# Governs how the AVM Syndicate interprets and executes synapse requests.
+#
+# PRINCIPLE:
+# - Structured outputs are infrastructure and must remain tone-neutral.
+# - Rhetorical tone (e.g., ScorpyunStyle) applies only to narrative renderers.
+# - VS-ENC must never stylize structured JSON objects.
+
+invocation_types:
+
+  structured_summary:
+    allowed_agents:
+      - ctx_grok_proto
+    output_shape: structured_summary
+    tone: neutral_analytic
+    guarantees:
+      - must_return_json
+      - must_include_title
+      - must_include_keypoints
+    fallback:
+      mode: wrap_raw_text
+      include_agent: true
+    notes: >
+      Structured output only. No rhetorical tone or stylistic transformation
+      is permitted for this invocation type.
+
+  interpretive:
+    allowed_agents:
+      - ctx_grok_proto
+    output_shape: structured_summary
+    tone: scorpyunstyle
+    guarantees:
+      - must_return_json
+    fallback:
+      mode: wrap_raw_text
+      include_agent: true
+    notes: >
+      Interpretive analysis returns structured summaries by default.
+      ScorpyunStyle tone applies ONLY when output is narrative text.
+      Structured JSON must not be stylistically altered.
+
+  transformation:
+    allowed_agents:
+      - ctx_grok_proto
+    output_shape: transformed_text
+    tone: neutral
+    guarantees:
+      - must_return_json
+    fallback:
+      mode: wrap_raw_text
+    notes: >
+      Transformation tasks prioritize fidelity and clarity over rhetoric.
+
+  classification:
+    allowed_agents:
+      - ctx_grok_proto
+    output_shape: label
+    tone: none
+    guarantees:
+      - must_return_json
+    notes: >
+      Classification outputs are atomic labels. No tone permitted.
+
+  synthesis:
+    allowed_agents:
+      - ctx_grok_proto
+    output_shape: synthesis
+    tone: scorpyunstyle
+    guarantees:
+      - must_return_json
+    fallback:
+      mode: safe_null
+    notes: >
+      Synthesis may be narrative or hybrid.
+      Tone applies only if output is text, not structured JSON.
+
+# -------------------------------------------------------------------
+# Global VS-ENC policies
+# -------------------------------------------------------------------
+global_policies:
+  reject_if_unknown_invocation: true
+  enforce_output_shape: true
+  enforce_allowed_agents: true
+  track_agent_usage: true
+  return_metadata: true
+
+# -------------------------------------------------------------------
+# Metadata returned with every call
+# -------------------------------------------------------------------
+metadata_fields:
+  - invocation_type
+  - agent_used
+  - output_shape
+  - timestamp
+  - execution_time_ms

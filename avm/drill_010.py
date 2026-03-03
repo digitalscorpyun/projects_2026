@@ -15,3 +15,4 @@ if missing_count == 0:
     print("All required environment variables are present.")
 else:
     print(f"{missing_count} required environment variable(s) missing.")
+

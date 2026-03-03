@@ -1,0 +1,14 @@
+authorized_by: War Council
+phase_id: vault_restructure_phase_01
+version: "0.3.0"
+dry_run: false
+
+actions:
+  - type: create_directory
+    params:
+      path: C:/Users/digitalscorpyun/sankofa_temple/Anacostia/africana_studies/analysis
+
+  - type: move_file
+    params:
+      source: C:\Users\digitalscorpyun\sankofa_temple\Anacostia\africana_studies\00_core_frameworks\africana_studies_cultural_frameworks.md
+      destination: C:/Users/digitalscorpyun/sankofa_temple/Anacostia/africana_studies/analysis/Africana Studies - Cultural Frameworks.md

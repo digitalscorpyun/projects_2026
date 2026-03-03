@@ -10,3 +10,4 @@ if debug_mode == "true":
     print("Debug mode is ON")
 else:
     print("Debug mode is OFF")
+

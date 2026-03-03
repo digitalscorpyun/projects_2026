@@ -125,3 +125,4 @@ class VSEncOrchestrator:
                 + payload["content"]
             )
         print(f"✓ Artifact Emitted under VS-ENC v1.0.0 Law: {save_path.name}")
+

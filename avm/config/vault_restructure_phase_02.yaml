@@ -1,0 +1,16 @@
+authorized_by: War Council
+phase_id: vault_restructure_phase_02
+version: "0.3.0"
+dry_run: false
+
+actions:
+  - type: noop
+  # -------------------------------------------------
+  # PHASE 02 — CURRICULUM NORMALIZATION (AI/ML ONLY)
+  # Scope: AI/ML curriculum already exists; no guessing
+  # -------------------------------------------------
+
+  # NO create_directory needed — already exists
+
+  # (Optional) If you later decide to consolidate ethics → curriculum,
+  # that becomes Phase 03. NOT here.

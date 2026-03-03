@@ -33,7 +33,7 @@ DEFAULT_SYNAPSE = (
 )
 
 INVOCATION_LAW_PATH = (
-    r"C:\Users\digitalscorpyun\projects_2025\avm_ops\config"
+    r"C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config"
     r"\vs_enc_invocation_law.yaml"
 )
 
@@ -113,3 +113,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

@@ -121,3 +121,4 @@ class WatsonXClient:
                 clean_text = clean_text.split(tag)[0].strip()
 
         return clean_text.strip()
+

@@ -1,0 +1,80 @@
+taxonomy_version: "0.2.2"
+status: ratified
+jurisdiction: war_council
+effective_date: 2025-12-30
+
+principles:
+  - classification is declarative
+  - inclusion confers authority
+  - exclusion is intentional
+  - no heuristic promotion permitted
+  - governance overrides remain explicit and rare
+
+classes:
+
+  governance:
+    description: >
+      Constitutional, doctrinal, and authority-bearing artifacts.
+      Governance nodes may override classification outcomes explicitly
+      but may never be inferred.
+    authority: supreme
+    include:
+      - war_council
+      - war_council_readme
+      - chess_index
+      - chess_training_schedule
+      - chess_training_rituals
+      - chess_error_taxonomy
+      - chess_opening_repertoire
+      - chess_tactical_archive
+
+  analysis:
+    description: >
+      Analytical knowledge artifacts concerned with interpretation,
+      synthesis, historical reasoning, political theory, and conceptual modeling.
+      Analysis generates insight but issues no commands.
+    authority: advisory
+    include:
+      - Africana Studies - Cultural Frameworks
+      - Black Revolutionary Network
+      - tubman_counterintelligence_networks
+      - algorithmic_colonialism
+      - discourse_on_colonialism
+      - ethics_case_studies
+      - legitimation_loop
+      - political_ai
+      - voting_rights
+      - the_black_jacobins
+      - On Tyranny Key Lessons
+      - china_civil_fusion
+      - ai_defense_networks
+
+  curriculum:
+    description: >
+      Structured learning paths, study sequences, and skill-development materials.
+      Curriculum exists to build operator capacity, not doctrine.
+    authority: developmental
+    include:
+      - Laws 41 – Intro to Machine Learning
+      - Scholarly Reading Journey
+
+  dashboard:
+    description: >
+      Operational coordination surfaces aggregating tasks, state,
+      or navigational links. Dashboards have no doctrinal authority.
+    authority: operational
+    include:
+      - task_dashboard
+
+  archive:
+    description: >
+      Preserved reference material, libraries, and inactive knowledge stores.
+      Archive is intentionally non-dominant.
+    authority: inert
+    include: []
+
+  excluded:
+    description: >
+      Nodes not yet ratified into any governed class.
+      Exclusion is a valid and intentional state.
+    authority: none

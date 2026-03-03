@@ -10,3 +10,4 @@ raw_json = os.environ.get("GATEWAY_CONFIG", "{}")
 config_dict = json.loads(raw_json)
 api_url = config_dict.get("url", "No URL Found")
 print(f"[GATEWAY_INIT]: Routing to {api_url}")
+

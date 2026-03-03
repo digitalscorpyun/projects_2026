@@ -8,3 +8,4 @@ my_db = os.environ.get("DATABASE_URL")
 
 # 2. THE DISPLAY: Send the data to the terminal screen
 print(my_db)
+

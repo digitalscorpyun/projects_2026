@@ -25,7 +25,7 @@ except ImportError:
 # CANONICAL CONSTANTS
 DEFAULT_VAULT_ROOT = r"C:\Users\digitalscorpyun\sankofa_temple\Anacostia"
 DEFAULT_TAXONOMY = (
-    r"C:\Users\digitalscorpyun\projects_2025\avm_ops\config\concept_taxonomy.yaml"
+    r"C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\concept_taxonomy.yaml"
 )
 ARTIFACT_DIR = "war_council/_artifacts/ctx_grok"
 
@@ -145,3 +145,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

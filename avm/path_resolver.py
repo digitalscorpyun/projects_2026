@@ -46,3 +46,4 @@ def resolve(path: str) -> str:
     # 4. Local forge-relative path (avm_ops/…)
     # --------------------------------------------------------
     return os.path.join(os.path.dirname(FORGE_ROOT), path.replace("/", os.sep))
+

@@ -1,0 +1,20 @@
+authorized_by: War Council
+phase_id: vault_restructure_phase_03_audit
+version: "0.3.1"
+dry_run: true
+
+actions:
+  - type: noop
+    note: >
+      READ-ONLY AUDIT.
+      Domain: science/ai_ml
+      Purpose:
+        - Enumerate existing files and subdirectories
+        - Validate against declared taxonomy (analysis | curriculum)
+        - Identify candidates for future phases WITHOUT moving or renaming
+      Prohibitions:
+        - No create_directory
+        - No move_file
+        - No update_wikilinks
+      Output:
+        - Execution telemetry only (logs/)

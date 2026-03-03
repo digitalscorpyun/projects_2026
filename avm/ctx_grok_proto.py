@@ -55,3 +55,4 @@ class CTXGrokProto:
             "agent": "ctx_grok_proto",
             "output": parsed,
         }
+

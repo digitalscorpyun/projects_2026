@@ -11,3 +11,4 @@ print(f"Time Audit: {current_time.to_datetime_string()}, Offset: {current_time.o
 print(f"Expected Notification: {expected_time.to_datetime_string()}")
 with open(log_file, "a") as f:
     f.write(f"Audit: {is_aligned}\n")
+

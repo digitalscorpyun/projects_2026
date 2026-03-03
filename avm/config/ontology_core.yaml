@@ -1,0 +1,7 @@
+# war_council/avm_syndicate/configs/ontology_core.yaml
+core_terms:
+  - Vault
+  - Syndicate
+  - Doctrine
+  - Protocol
+  - Agent
