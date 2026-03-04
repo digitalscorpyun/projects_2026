@@ -1,10 +1,12 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — THE SYNTHESIS ENGINE v1.8.1 [HARDENED+CRITICAL]
+# ✶⌁✶ scholarly_dive.py — THE SYNTHESIS ENGINE v1.8.2 [HARDENED+CRITICAL]
 # ==============================================================================
 # ROLE: Deep synthesis client with strict post-LLM validation + safe emission gate.
 # GOAL: Stop fabricated bibliography + enforce metadata shape before VS-ENC emits.
-# COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
+# CHANGE (v1.8.2): Adds a real “release valve” by locally sanitizing bibliography
+#                  (suspicious/unverified -> "uncertain") instead of hard-failing.
 # DEFAULT: ALWAYS historiography-first (no operator prompt).
+# COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
 # ==============================================================================
 
 from __future__ import annotations
@@ -39,10 +41,24 @@ PACIFIC = ZoneInfo("America/Los_Angeles")  # reserved for future timestamp needs
 ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
 os.makedirs(ARTIFACT_DIR, exist_ok=True)
 
+# ------------------------------------------------------------------------------
 # Strictness knobs (operator override via env vars)
+# ------------------------------------------------------------------------------
+# Strict modes still exist, but v1.8.2 adds a "release valve" that can repair
+# bibliography locally instead of failing emission.
 STRICT_BIBLIO = os.getenv("SCHOLARLY_STRICT_BIBLIO", "1") == "1"
 STRICT_META = os.getenv("SCHOLARLY_STRICT_META", "1") == "1"
 RETRY_ON_FAIL = int(os.getenv("SCHOLARLY_RETRY_ON_FAIL", "1"))
+
+# Release valve behavior:
+# - When STRICT_BIBLIO is on, we still *detect* suspicious biblio,
+#   but we try to sanitize it automatically (replace with "uncertain")
+#   before we refuse emission.
+BIBLIO_AUTO_SANITIZE = os.getenv("SCHOLARLY_BIBLIO_AUTO_SANITIZE", "1") == "1"
+
+# Length control (helps avoid "too long" artifacts)
+MAX_WORDS = int(os.getenv("SCHOLARLY_MAX_WORDS", "1100"))  # prompt target
+MAX_NEW_TOKENS = int(os.getenv("SCHOLARLY_MAX_NEW_TOKENS", "2600"))  # model cap
 
 # ------------------------------------------------------------------------------
 # PROMPT LAW (Always historiography-first)
@@ -59,9 +75,10 @@ PRIMARY RULE: Historiography > hagiography.
 
 EVIDENCE / CITATION LAW (NON-NEGOTIABLE):
 - You may ONLY include a bibliography entry if you are confident it exists as a real, citable source.
-- If you are not confident a source exists, write "uncertain" and DO NOT fabricate titles, authors, years, journals, or court case numbers.
+- If you are not confident a source exists, write "uncertain" and DO NOT fabricate titles, authors, years, journals, or case numbers.
 - Prefer fewer, higher-confidence sources over many.
-- If you cannot support claims with real sources, keep claims general and label uncertainty.
+- Do NOT include tables.
+- Target length: <= {max_words} words.
 
 OUTPUT STRUCTURE (use these exact headers):
 # Abstract
@@ -77,8 +94,9 @@ OUTPUT STRUCTURE (use these exact headers):
 
 CITATIONS:
 - Use Markdown footnotes [^1] in the body.
+- Ensure every footnote referenced in the body has a bibliography entry.
 - In bibliography, format as: [^1]: Author. *Title* (Publisher, Year). OR [^1]: Institution. *Report Title* (Year).
-- If uncertain, say "uncertain" rather than inventing details.
+- If uncertain, the bibliography entry must be exactly: [^N]: uncertain
 
 METADATA:
 - Provide JSON labeled '### METADATA' at the absolute end.
@@ -89,7 +107,7 @@ METADATA:
   - key_themes: list[string]
   - bias_analysis: string
   - grok_ctx_reflection: string
-  - quotes: list[string]  (each item must include attribution, e.g. "Quote text — Name/Source")
+  - quotes: list[string] (each item must include attribution, e.g. "Quote text — Name/Source")
   - adinkra: list[string]
 """
 
@@ -104,6 +122,8 @@ CONSTRAINTS (NON-NEGOTIABLE):
 4) Provide '### METADATA' JSON at absolute end using ONLY allowed keys and correct value shapes.
 5) quotes: each quote must include attribution inside the same quoted string ("... — Attribution").
 6) adinkra must be a JSON list of strings (not a single string).
+7) Do NOT include tables.
+8) Be concise.
 
 Return ONLY the corrected report (no commentary).
 
@@ -114,6 +134,10 @@ PREVIOUS OUTPUT (for repair):
 # ------------------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------------------
+_FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
+_BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:(.*)$")
+
+
 def _safe_json_loads(maybe_json: str) -> Dict[str, Any]:
     try:
         obj = json.loads(maybe_json)
@@ -170,7 +194,7 @@ def _escape_braces(s: str) -> str:
 
 def _build_prompt(topic: str) -> str:
     safe_topic = _escape_braces(topic)
-    return PROMPT_TEMPLATE.format(topic=safe_topic)
+    return PROMPT_TEMPLATE.format(topic=safe_topic, max_words=MAX_WORDS)
 
 
 def _build_repair_prompt(bad_output: str) -> str:
@@ -195,7 +219,7 @@ def _ensure_str(value: Any) -> Optional[str]:
 def _looks_like_fabricated_biblio_line(line: str) -> bool:
     """
     Heuristic-only (no web). Flags common hallucination patterns.
-    NOTE: This will cause false positives; you can relax STRICT_BIBLIO via env var.
+    NOTE: This will cause false positives; use auto-sanitize to avoid hard fails.
     """
     line_lc = line.lower()
     suspicious_markers = [
@@ -205,58 +229,147 @@ def _looks_like_fabricated_biblio_line(line: str) -> bool:
         "annual report",
         "update",
         "transcript #",
-        "case",
-        "no.",
+        "unpub. lexis",
+        "lexis",
     ]
     has_year = bool(re.search(r"\b(19|20)\d{2}\b", line))
     return any(m in line_lc for m in suspicious_markers) and has_year
 
 
+def _split_biblio(body: str) -> Tuple[str, str]:
+    if "# 📚 BIBLIOGRAPHY" not in body:
+        return body, ""
+    main, tail = body.split("# 📚 BIBLIOGRAPHY", 1)
+    return main.rstrip(), tail.strip()
+
+
+def _parse_biblio_lines(biblio_text: str) -> Tuple[Dict[str, str], List[str]]:
+    """
+    Returns:
+      - id_to_line: { "1": "[^1]: ...", ... } (keeps first occurrence)
+      - extras: non-footnote lines (kept verbatim unless strict sanitization removes them)
+    """
+    id_to_line: Dict[str, str] = {}
+    extras: List[str] = []
+
+    for raw_ln in biblio_text.splitlines():
+        ln = raw_ln.strip()
+        if not ln:
+            continue
+        m = _BIB_LINE_RE.match(ln)
+        if not m:
+            extras.append(ln)
+            continue
+        fid = m.group(1)
+        if fid not in id_to_line:
+            id_to_line[fid] = ln
+        # If duplicated ids appear, we silently drop later duplicates.
+
+    return id_to_line, extras
+
+
+def _sanitize_bibliography(body: str) -> Tuple[str, List[str]]:
+    """
+    Local “release valve”:
+    - ensures every in-body footnote id exists in bibliography
+    - replaces suspicious/unverified bibliography lines with "[^N]: uncertain"
+    - removes any 'UNVERIFIED' text lines
+    """
+    notes: List[str] = []
+    main, biblio = _split_biblio(body)
+
+    if not biblio:
+        return body, notes
+
+    refs = sorted(set(_FOOTNOTE_REF_RE.findall(main)), key=lambda x: int(x))
+    id_to_line, extras = _parse_biblio_lines(biblio)
+
+    # Drop explicit "unverified" commentary lines in strict mode
+    if STRICT_BIBLIO and extras:
+        kept_extras: List[str] = []
+        for ln in extras:
+            if "unverified" in ln.lower():
+                notes.append(f"Removed bibliography commentary line: {ln}")
+                continue
+            kept_extras.append(ln)
+        extras = kept_extras
+
+    # Ensure all referenced ids exist and are safe
+    for fid in refs:
+        current = id_to_line.get(fid)
+        if current is None:
+            id_to_line[fid] = f"[^{fid}]: uncertain"
+            notes.append(f"Added missing bibliography entry as uncertain: [^{fid}]")
+            continue
+
+        if "unverified" in current.lower():
+            id_to_line[fid] = f"[^{fid}]: uncertain"
+            notes.append(f"Replaced UNVERIFIED bibliography entry with uncertain: [^{fid}]")
+            continue
+
+        if STRICT_BIBLIO and _looks_like_fabricated_biblio_line(current):
+            id_to_line[fid] = f"[^{fid}]: uncertain"
+            notes.append(f"Sanitized suspicious bibliography entry to uncertain: [^{fid}]")
+
+    # Rebuild bibliography deterministically in numeric order (refs first)
+    rebuilt: List[str] = []
+    for fid in refs:
+        rebuilt.append(id_to_line[fid])
+
+    # Optionally keep additional (unreferenced) bibliography entries if present
+    unref = sorted((set(id_to_line.keys()) - set(refs)), key=lambda x: int(x))
+    for fid in unref:
+        # If strict, also sanitize these if suspicious
+        ln = id_to_line[fid]
+        if STRICT_BIBLIO and ("unverified" in ln.lower() or _looks_like_fabricated_biblio_line(ln)):
+            ln = f"[^{fid}]: uncertain"
+            notes.append(f"Sanitized unreferenced suspicious entry to uncertain: [^{fid}]")
+        rebuilt.append(ln)
+
+    # Keep extras at the very top if any remain (rare)
+    final_biblio_lines = []
+    if extras:
+        final_biblio_lines.extend(extras)
+    final_biblio_lines.extend(rebuilt)
+
+    new_body = f"{main}\n\n# 📚 BIBLIOGRAPHY\n" + "\n".join(final_biblio_lines).rstrip() + "\n"
+    return new_body, notes
+
+
 def _validate_bibliography(body: str) -> Tuple[bool, List[str]]:
-    """
-    Enforces:
-    - bibliography section exists
-    - no obviously fabricated lines (heuristic)
-    - footnotes referenced exist in bibliography lines
-    """
     errors: List[str] = []
 
     if "# 📚 BIBLIOGRAPHY" not in body:
         errors.append("Missing '# 📚 BIBLIOGRAPHY' section.")
         return False, errors
 
-    biblio = body.split("# 📚 BIBLIOGRAPHY", 1)[1].strip()
-    lines = [ln.strip() for ln in biblio.splitlines() if ln.strip()]
+    main, biblio = _split_biblio(body)
+    if not biblio.strip():
+        errors.append("Empty bibliography section.")
+        return False, errors
 
-    main = body.split("# 📚 BIBLIOGRAPHY", 1)[0]
-    refs = set(re.findall(r"\[\^(\d+)\]", main))
+    lines = [ln.strip() for ln in biblio.splitlines() if ln.strip()]
+    refs = set(_FOOTNOTE_REF_RE.findall(main))
     bib_ids = set(re.findall(r"^\[\^(\d+)\]:", "\n".join(lines), flags=re.MULTILINE))
 
-    missing = sorted(refs - bib_ids)
+    missing = sorted(refs - bib_ids, key=lambda x: int(x))
     if missing:
         errors.append(
-            "Footnotes referenced in body but missing from bibliography: "
-            + ", ".join(missing)
+            "Footnotes referenced in body but missing from bibliography: " + ", ".join(missing)
         )
 
     if STRICT_BIBLIO:
         for ln in lines:
-            if ln.startswith("[^") and _looks_like_fabricated_biblio_line(ln):
-                errors.append(f"Suspicious bibliography entry (possible fabrication): {ln}")
-
-        # Also block "UNVERIFIED" flags (these are explicitly not acceptable in strict mode)
-        for ln in lines:
             if "unverified" in ln.lower():
                 errors.append(f"Unverified bibliography entry not allowed in strict mode: {ln}")
+        for ln in lines:
+            if ln.startswith("[^") and _looks_like_fabricated_biblio_line(ln):
+                errors.append(f"Suspicious bibliography entry (possible fabrication): {ln}")
 
     return (len(errors) == 0), errors
 
 
 def _validate_metadata(meta: Dict[str, Any]) -> Tuple[bool, List[str], Dict[str, Any]]:
-    """
-    Enforces allowed keys + value shapes.
-    Coerces where safe (e.g., string -> [string] for list fields).
-    """
     errors: List[str] = []
     allowed = {
         "title",
@@ -268,26 +381,25 @@ def _validate_metadata(meta: Dict[str, Any]) -> Tuple[bool, List[str], Dict[str,
         "adinkra",
     }
     meta = {k: v for k, v in (meta or {}).items() if k in allowed}
-
     normalized: Dict[str, Any] = {}
 
     title = _ensure_str(meta.get("title"))
     if title:
         normalized["title"] = title
 
-    for k in ("tags", "key_themes", "adinkra"):
-        lv = _ensure_list_of_str(meta.get(k))
+    for key in ("tags", "key_themes", "adinkra"):
+        lv = _ensure_list_of_str(meta.get(key))
         if lv is not None:
-            normalized[k] = lv
-        elif meta.get(k) is not None:
-            errors.append(f"Metadata '{k}' must be list[string].")
+            normalized[key] = lv
+        elif meta.get(key) is not None:
+            errors.append(f"Metadata '{key}' must be list[string].")
 
-    for k in ("bias_analysis", "grok_ctx_reflection"):
-        sv = _ensure_str(meta.get(k))
+    for key in ("bias_analysis", "grok_ctx_reflection"):
+        sv = _ensure_str(meta.get(key))
         if sv is not None:
-            normalized[k] = sv
-        elif meta.get(k) is not None:
-            errors.append(f"Metadata '{k}' must be string.")
+            normalized[key] = sv
+        elif meta.get(key) is not None:
+            errors.append(f"Metadata '{key}' must be string.")
 
     qv = _ensure_list_of_str(meta.get("quotes"))
     if qv is not None:
@@ -321,7 +433,7 @@ class ScholarlySynapse:
         self.client = WatsonXClient()
         self.client.set_agent(self.agent_name)
 
-    def ask(self, prompt: str, max_new_tokens: int = 3500) -> str:
+    def ask(self, prompt: str, max_new_tokens: int = MAX_NEW_TOKENS) -> str:
         return self.client.ask(
             prompt,
             max_new_tokens=max_new_tokens,
@@ -338,13 +450,12 @@ class StubAgent:
 # Main Workflow
 # ------------------------------------------------------------------------------
 def run_synthesis() -> None:
-    version = "v1.8.1"
+    version = "v1.8.2"
     print(f"✶⌁✶ SCHOLARLY DIVE {version} [HARDENED+CRITICAL] ONLINE")
+    print(f"✶ Synapse: {DEFAULT_AGENT} identity manifested.")
 
     try:
         topic = _get_topic()
-
-        # Always historiography-first (removed operator prompt).
         prompt = _build_prompt(topic)
 
         synapse = ScholarlySynapse(agent_name=DEFAULT_AGENT)
@@ -358,36 +469,48 @@ def run_synthesis() -> None:
         if not body.strip():
             raise ValueError("Model returned empty body content; refusing emission.")
 
-        # Validation pass (with optional auto-repair)
         attempts = 0
         while True:
             attempts += 1
+
+            # 1) Validate
             ok_bib, bib_errors = _validate_bibliography(body)
             ok_meta, meta_errors, meta_norm = _validate_metadata(meta)
-
             hard_fail = (STRICT_BIBLIO and not ok_bib) or (STRICT_META and not ok_meta)
+
+            # 2) If bibliography fails and auto-sanitize is enabled, try local repair first
+            if hard_fail and STRICT_BIBLIO and not ok_bib and BIBLIO_AUTO_SANITIZE:
+                body2, notes = _sanitize_bibliography(body)
+                if notes:
+                    print("⚠️  Bibliography sanitized locally (release valve engaged).")
+                body = body2
+
+                # Re-validate after local repair
+                ok_bib, bib_errors = _validate_bibliography(body)
+                hard_fail = (STRICT_BIBLIO and not ok_bib) or (STRICT_META and not ok_meta)
 
             if not hard_fail:
                 meta = meta_norm
                 break
 
+            # 3) If still failing, optional model repair pass (bounded)
             if attempts > (RETRY_ON_FAIL + 1):
                 print("❌ REFUSING EMISSION: validation failed.")
                 if bib_errors:
                     print("— Bibliography issues:")
-                    for e in bib_errors:
-                        print(f"  • {e}")
+                    for err in bib_errors:
+                        print(f"  • {err}")
                 if meta_errors:
                     print("— Metadata issues:")
-                    for e in meta_errors:
-                        print(f"  • {e}")
+                    for err in meta_errors:
+                        print(f"  • {err}")
                 sys.exit(2)
 
             print("⚠️  Validation failed; attempting repair pass...")
             repair_prompt = _build_repair_prompt(
                 body + ("\n\n### METADATA\n" + json.dumps(meta, ensure_ascii=False))
             )
-            raw2 = synapse.ask(repair_prompt, max_new_tokens=3500)
+            raw2 = synapse.ask(repair_prompt)
             body, meta = _extract_metadata(raw2)
 
             if not body.strip():
@@ -428,8 +551,8 @@ def run_synthesis() -> None:
         print("\n⏹️  Aborted by operator.")
     except SystemExit:
         raise
-    except Exception as e:
-        print(f"❌ ERROR: {e}")
+    except Exception as exc:
+        print(f"❌ ERROR: {exc}")
 
 
 if __name__ == "__main__":
