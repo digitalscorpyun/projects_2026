@@ -1,6 +1,7 @@
 # lion_scraper.py — v1.5.0 — CANONICAL RSS ENGINE
-# REFACTOR: strict article hygiene, fresh CSV per run, persistent seen-state,
-#           RSS-first metadata capture, aggressive junk suppression
+# REFACTOR: strict article hygiene, persistent seen-state,
+#           RSS-first metadata capture, aggressive junk suppression,
+#           append-only CSV behavior
 # STATUS: CANONICAL | PRODUCTION READY
 
 from __future__ import annotations
@@ -384,6 +385,24 @@ def save_seen(seen: set[str]) -> None:
             f.write(url + "\n")
 
 
+def load_existing_csv_urls(output_path: str) -> set[str]:
+    if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+        return set()
+
+    existing_urls: set[str] = set()
+    try:
+        with open(output_path, "r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                url = (row.get("url") or "").strip()
+                if url:
+                    existing_urls.add(normalize_url(url))
+    except Exception:
+        return set()
+
+    return existing_urls
+
+
 async def fetch_text(
     session: aiohttp.ClientSession,
     url: str,
@@ -750,21 +769,39 @@ async def scrape() -> List[Dict[str, Any]]:
 
 
 def write_csvs(kept: List[Dict[str, Any]]) -> None:
+    fieldnames = ["title", "url", "date", "host", "hits", "words", "source"]
+    output_path = here_path(OUTPUT_CSV)
+
+    if not kept:
+        print(f"\n✅ Mission Complete | New Articles Appended: 0 | 📄 {output_path}")
+        return
+
     kept_sorted = sorted(
         kept,
         key=lambda x: (x["source"], x["date"], x["title"].lower()),
     )
-    fieldnames = ["title", "url", "date", "host", "hits", "words", "source"]
-    output_path = here_path(OUTPUT_CSV)
 
-    cleaned_rows = [{k: row[k] for k in fieldnames} for row in kept_sorted]
+    existing_urls = load_existing_csv_urls(output_path)
 
-    with open(output_path, "w", newline="", encoding="utf-8") as f:
+    cleaned_rows = []
+    for row in kept_sorted:
+        normalized_row = {k: row[k] for k in fieldnames}
+        row_url = normalize_url(normalized_row["url"])
+        if row_url in existing_urls:
+            continue
+        existing_urls.add(row_url)
+        cleaned_rows.append(normalized_row)
+
+    file_exists = os.path.exists(output_path)
+    file_is_empty = (not file_exists) or os.path.getsize(output_path) == 0
+
+    with open(output_path, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
-        writer.writeheader()
+        if file_is_empty:
+            writer.writeheader()
         writer.writerows(cleaned_rows)
 
-    print(f"\n✅ Mission Complete | New Articles: {len(kept)} | 📄 {output_path}")
+    print(f"\n✅ Mission Complete | New Articles Appended: {len(cleaned_rows)} | 📄 {output_path}")
 
 
 if __name__ == "__main__":

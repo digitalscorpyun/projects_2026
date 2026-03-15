@@ -1,6 +1,7 @@
 {
     "cutoff_days": 14,
     "reject_undated": false,
+    "strict_article_mode": false,
     "min_words": 200,
     "concurrency": 12,
     "timeout_sec": 25,
@@ -60,7 +61,8 @@
         },
         {
             "name": "The NewStatesman",
-            "url": "https://www.newstatesman.com/"
+            "url": "https://www.newstatesman.com/",
+            "article_selector": "article a, h2 a, h3 a"
         },
         {
             "name": "Ground News",
