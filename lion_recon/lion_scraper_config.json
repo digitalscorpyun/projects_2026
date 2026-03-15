@@ -59,6 +59,10 @@
             "url": "https://www.semafor.com/feed"
         },
         {
+            "name": "The NewStatesman",
+            "url": "https://www.newstatesman.com/"
+        },
+        {
             "name": "Ground News",
             "url": "https://ground.news/"
         },
