@@ -1,0 +1,49 @@
+{
+    "cutoff_days": 30,
+    "reject_undated": false,
+    "min_words": 200,
+    "concurrency": 12,
+    "timeout_sec": 25,
+
+    "output_csv": "sunday_lion_scraper_output.csv",
+
+    "keywords": [
+        "Black",
+        "Culture",
+        "Global",
+        "Tech",
+        "History",
+        "Sovereignty",
+        "AI"
+    ],
+
+    "sources": [
+
+        { "name": "Financial Times", "url": "https://www.ft.com/rss/home" },
+        { "name": "New York Times", "url": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml" },
+        { "name": "Reuters World", "url": "https://www.reuters.com/world/rss" },
+        { "name": "Associated Press", "url": "https://apnews.com/rss" },
+
+        { "name": "Al Jazeera English", "url": "https://www.aljazeera.com/xml/rss/all.xml" },
+        { "name": "BBC World", "url": "http://feeds.bbci.co.uk/news/world/rss.xml" },
+        { "name": "Guardian World", "url": "https://www.theguardian.com/world/rss" },
+
+        { "name": "France24", "url": "https://www.france24.com/en/rss" },
+        { "name": "DW World", "url": "https://rss.dw.com/rdf/rss-en-world" },
+        { "name": "LeMonde", "url": "https://www.lemonde.fr/en/rss/une.xml" },
+
+        { "name": "Reuters Africa", "url": "https://www.reuters.com/world/africa/rss" },
+        { "name": "The Africa Report", "url": "https://www.theafricareport.com/feed/" },
+        { "name": "African Arguments", "url": "https://africanarguments.org/feed/" },
+
+        { "name": "National Review", "url": "https://www.nationalreview.com/feed" },
+        { "name": "Washington Examiner", "url": "https://www.washingtonexaminer.com/tag/politics/feed" },
+        { "name": "The Dispatch", "url": "https://thedispatch.com/feed" },
+
+        {
+            "name": "RedState",
+            "url": "https://redstate.com/",
+            "article_selector": "article a, h2 a, h3 a, .entry-title a"
+        }
+    ]
+}
