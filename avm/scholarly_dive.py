@@ -1,12 +1,16 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — THE SYNTHESIS ENGINE v1.8.2 [HARDENED+CRITICAL]
+# ✶⌁✶ scholarly_dive.py — THE SYNTHESIS ENGINE v2.0.0 [REFRACTORED+GATED]
 # ==============================================================================
-# ROLE: Deep synthesis client with strict post-LLM validation + safe emission gate.
-# GOAL: Stop fabricated bibliography + enforce metadata shape before VS-ENC emits.
-# CHANGE (v1.8.2): Adds a real “release valve” by locally sanitizing bibliography
-#                  (suspicious/unverified -> "uncertain") instead of hard-failing.
-# DEFAULT: ALWAYS historiography-first (no operator prompt).
-# COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
+# ROLE: Deep synthesis client with semantic validation + hard emission gate.
+# GOAL: Prevent bad upstream output from reaching the vault.
+# CHANGE (v2.0.0):
+#   - Removes "sanitize-and-ship" behavior for referenced bad citations
+#   - Blocks placeholder/default text from emission
+#   - Adds topic-anchor drift checks
+#   - Adds section integrity checks
+#   - Adds body-quality checks for sludge/filler patterns
+# DEFAULT: ALWAYS historiography-first (no operator prompt)
+# COMPLIANCE: SENTINEL-V2.0.0-ALIGN / schema-on-write discipline
 # ==============================================================================
 
 from __future__ import annotations
@@ -16,7 +20,7 @@ import os
 import re
 import sys
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from zoneinfo import ZoneInfo
 
 from vs_enc import VSEncOrchestrator
@@ -42,26 +46,26 @@ ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
 os.makedirs(ARTIFACT_DIR, exist_ok=True)
 
 # ------------------------------------------------------------------------------
-# Strictness knobs (operator override via env vars)
+# Strictness knobs
 # ------------------------------------------------------------------------------
-# Strict modes still exist, but v1.8.2 adds a "release valve" that can repair
-# bibliography locally instead of failing emission.
 STRICT_BIBLIO = os.getenv("SCHOLARLY_STRICT_BIBLIO", "1") == "1"
 STRICT_META = os.getenv("SCHOLARLY_STRICT_META", "1") == "1"
+STRICT_BODY = os.getenv("SCHOLARLY_STRICT_BODY", "1") == "1"
+STRICT_TOPIC = os.getenv("SCHOLARLY_STRICT_TOPIC", "1") == "1"
+
 RETRY_ON_FAIL = int(os.getenv("SCHOLARLY_RETRY_ON_FAIL", "1"))
 
-# Release valve behavior:
-# - When STRICT_BIBLIO is on, we still *detect* suspicious biblio,
-#   but we try to sanitize it automatically (replace with "uncertain")
-#   before we refuse emission.
-BIBLIO_AUTO_SANITIZE = os.getenv("SCHOLARLY_BIBLIO_AUTO_SANITIZE", "1") == "1"
+MAX_WORDS = int(os.getenv("SCHOLARLY_MAX_WORDS", "1100"))
+MAX_NEW_TOKENS = int(os.getenv("SCHOLARLY_MAX_NEW_TOKENS", "2600"))
 
-# Length control (helps avoid "too long" artifacts)
-MAX_WORDS = int(os.getenv("SCHOLARLY_MAX_WORDS", "1100"))  # prompt target
-MAX_NEW_TOKENS = int(os.getenv("SCHOLARLY_MAX_NEW_TOKENS", "2600"))  # model cap
+MIN_TOPIC_ANCHORS = int(os.getenv("SCHOLARLY_MIN_TOPIC_ANCHORS", "2"))
+MIN_BODY_WORDS = int(os.getenv("SCHOLARLY_MIN_BODY_WORDS", "350"))
+MAX_BODY_WORDS = int(os.getenv("SCHOLARLY_MAX_BODY_WORDS", "1800"))
+
+ALLOW_UNCERTAIN_UNREFERENCED = os.getenv("SCHOLARLY_ALLOW_UNCERTAIN_UNREFERENCED", "1") == "1"
 
 # ------------------------------------------------------------------------------
-# PROMPT LAW (Always historiography-first)
+# PROMPT LAW
 # ------------------------------------------------------------------------------
 PROMPT_TEMPLATE = """\
 ROLE: You are the Algorithmic Griot.
@@ -77,6 +81,7 @@ EVIDENCE / CITATION LAW (NON-NEGOTIABLE):
 - You may ONLY include a bibliography entry if you are confident it exists as a real, citable source.
 - If you are not confident a source exists, write "uncertain" and DO NOT fabricate titles, authors, years, journals, or case numbers.
 - Prefer fewer, higher-confidence sources over many.
+- Every paragraph in the Historical Analysis section should remain tightly specific to the topic.
 - Do NOT include tables.
 - Target length: <= {max_words} words.
 
@@ -109,6 +114,11 @@ METADATA:
   - grok_ctx_reflection: string
   - quotes: list[string] (each item must include attribution, e.g. "Quote text — Name/Source")
   - adinkra: list[string]
+
+QUALITY LAW:
+- Do NOT use placeholder text such as "Pending semantic summary" or similar defaults.
+- Do NOT pad with generic Civil War/Reconstruction prose unless directly tied to the topic.
+- Do NOT cite works irrelevant to the specific place, date, institution, or event being analyzed.
 """
 
 REPAIR_TEMPLATE = """\
@@ -119,11 +129,13 @@ CONSTRAINTS (NON-NEGOTIABLE):
 1) Keep the same section headers as required.
 2) Remove or rewrite any bibliography entries that you are not confident are real. Prefer marking "uncertain".
 3) Ensure footnotes used in body appear in bibliography.
-4) Provide '### METADATA' JSON at absolute end using ONLY allowed keys and correct value shapes.
-5) quotes: each quote must include attribution inside the same quoted string ("... — Attribution").
-6) adinkra must be a JSON list of strings (not a single string).
-7) Do NOT include tables.
-8) Be concise.
+4) Ensure the body remains tightly tied to the specific topic, not just the broader era.
+5) Remove placeholder/default language entirely.
+6) Provide '### METADATA' JSON at absolute end using ONLY allowed keys and correct value shapes.
+7) quotes: each quote must include attribution inside the same quoted string ("... — Attribution").
+8) adinkra must be a JSON list of strings (not a single string).
+9) Do NOT include tables.
+10) Be concise.
 
 Return ONLY the corrected report (no commentary).
 
@@ -132,12 +144,68 @@ PREVIOUS OUTPUT (for repair):
 """
 
 # ------------------------------------------------------------------------------
-# Helpers
+# Regex + constants
 # ------------------------------------------------------------------------------
 _FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
 _BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:(.*)$")
+_WORD_RE = re.compile(r"\b[\w'’-]+\b", flags=re.UNICODE)
 
+REQUIRED_HEADERS = [
+    "# Abstract",
+    "# Historical Analysis",
+    "## Historiography & Scholarly Debate",
+    "## Material Conditions & Enforcement",
+    "## Agency & Counter-Agency",
+    "## Contradictions / Limits / Exemptions",
+    "# Semiotic Analysis",
+    "## Myth / National Narrative (Interrogate, do not affirm)",
+    "## Rhetorical Mechanics",
+    "# 📚 BIBLIOGRAPHY",
+]
 
+PLACEHOLDER_PATTERNS = [
+    r"pending semantic summary",
+    r"pending semantic longform summary",
+    r"lorem ipsum",
+    r"todo",
+    r"tbd",
+    r"insert citation",
+    r"citation needed",
+    r"fill in later",
+    r"placeholder",
+]
+
+GENERIC_DRIFT_PATTERNS = [
+    r"\bthe civil war\b",
+    r"\breconstruction\b",
+    r"\bemancipation proclamation\b",
+    r"\bpost-civil war america\b",
+]
+
+SLUDGE_PATTERNS = [
+    r"\buncertainty flux\b",
+    r"\bprofund? depths\b",
+    r"\bhearts minds generations\b",
+    r"\bcollectively pursued together\b",
+    r"\btranscending ostensible limitations\b",
+    r"\bindelibly\b",
+    r"\binexorable march\b",
+    r"\bsanitizing complexities\b",
+]
+
+ALLOWED_META_KEYS = {
+    "title",
+    "tags",
+    "key_themes",
+    "bias_analysis",
+    "grok_ctx_reflection",
+    "quotes",
+    "adinkra",
+}
+
+# ------------------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------------------
 def _safe_json_loads(maybe_json: str) -> Dict[str, Any]:
     try:
         obj = json.loads(maybe_json)
@@ -216,24 +284,12 @@ def _ensure_str(value: Any) -> Optional[str]:
     return value if isinstance(value, str) else None
 
 
-def _looks_like_fabricated_biblio_line(line: str) -> bool:
-    """
-    Heuristic-only (no web). Flags common hallucination patterns.
-    NOTE: This will cause false positives; use auto-sanitize to avoid hard fails.
-    """
-    line_lc = line.lower()
-    suspicious_markers = [
-        "judgment no.",
-        "working paper",
-        "policy brief no.",
-        "annual report",
-        "update",
-        "transcript #",
-        "unpub. lexis",
-        "lexis",
-    ]
-    has_year = bool(re.search(r"\b(19|20)\d{2}\b", line))
-    return any(m in line_lc for m in suspicious_markers) and has_year
+def _word_count(text: str) -> int:
+    return len(_WORD_RE.findall(text))
+
+
+def _normalize_spaces(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def _split_biblio(body: str) -> Tuple[str, str]:
@@ -244,11 +300,6 @@ def _split_biblio(body: str) -> Tuple[str, str]:
 
 
 def _parse_biblio_lines(biblio_text: str) -> Tuple[Dict[str, str], List[str]]:
-    """
-    Returns:
-      - id_to_line: { "1": "[^1]: ...", ... } (keeps first occurrence)
-      - extras: non-footnote lines (kept verbatim unless strict sanitization removes them)
-    """
     id_to_line: Dict[str, str] = {}
     extras: List[str] = []
 
@@ -263,77 +314,197 @@ def _parse_biblio_lines(biblio_text: str) -> Tuple[Dict[str, str], List[str]]:
         fid = m.group(1)
         if fid not in id_to_line:
             id_to_line[fid] = ln
-        # If duplicated ids appear, we silently drop later duplicates.
 
     return id_to_line, extras
 
 
-def _sanitize_bibliography(body: str) -> Tuple[str, List[str]]:
+def _looks_like_fabricated_biblio_line(line: str) -> bool:
     """
-    Local “release valve”:
-    - ensures every in-body footnote id exists in bibliography
-    - replaces suspicious/unverified bibliography lines with "[^N]: uncertain"
-    - removes any 'UNVERIFIED' text lines
+    Heuristic-only (no web).
+    Flags common hallucination markers and malformed bibliography patterns.
     """
-    notes: List[str] = []
-    main, biblio = _split_biblio(body)
+    line_lc = line.lower()
 
-    if not biblio:
-        return body, notes
+    suspicious_markers = [
+        "judgment no.",
+        "working paper",
+        "policy brief no.",
+        "annual report",
+        "update",
+        "transcript #",
+        "unpub. lexis",
+        "lexis",
+        "forthcoming",
+        "draft",
+        "manuscript",
+    ]
 
-    refs = sorted(set(_FOOTNOTE_REF_RE.findall(main)), key=lambda x: int(x))
-    id_to_line, extras = _parse_biblio_lines(biblio)
+    has_year = bool(re.search(r"\b(18|19|20)\d{2}\b", line))
+    has_title_marker = "*" in line or "report" in line_lc
+    too_short = len(line.strip()) < 18
 
-    # Drop explicit "unverified" commentary lines in strict mode
-    if STRICT_BIBLIO and extras:
-        kept_extras: List[str] = []
-        for ln in extras:
-            if "unverified" in ln.lower():
-                notes.append(f"Removed bibliography commentary line: {ln}")
-                continue
-            kept_extras.append(ln)
-        extras = kept_extras
+    return (
+        (any(m in line_lc for m in suspicious_markers) and has_year)
+        or too_short
+        or ("[^" in line and not has_title_marker and "uncertain" not in line_lc)
+    )
 
-    # Ensure all referenced ids exist and are safe
-    for fid in refs:
-        current = id_to_line.get(fid)
-        if current is None:
-            id_to_line[fid] = f"[^{fid}]: uncertain"
-            notes.append(f"Added missing bibliography entry as uncertain: [^{fid}]")
+
+def _extract_topic_anchors(topic: str) -> List[str]:
+    """
+    Pulls coarse anchor phrases from the topic so we can detect drift.
+    Tries to preserve capitalized names, quoted terms, years, and salient words.
+    """
+    raw = topic.strip()
+
+    quoted = re.findall(r'"([^"]+)"|\'([^\']+)\'', raw)
+    anchors: List[str] = []
+    for pair in quoted:
+        q = pair[0] or pair[1]
+        q = q.strip()
+        if q and len(q) >= 3:
+            anchors.append(q)
+
+    years = re.findall(r"\b(1[6-9]\d{2}|20\d{2})\b", raw)
+    anchors.extend(years)
+
+    cap_phrases = re.findall(r"\b(?:[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})\b", raw)
+    anchors.extend(cap_phrases)
+
+    words = re.findall(r"\b[a-zA-Z][a-zA-Z\-]{3,}\b", raw)
+    stop = {
+        "the", "and", "with", "from", "into", "about", "after", "before", "during",
+        "under", "over", "that", "this", "those", "these", "their", "there", "where",
+        "what", "when", "which", "whose", "party", "history", "historical",
+        "organizational", "genesis", "analysis", "study", "research",
+    }
+    for w in words:
+        wl = w.lower()
+        if wl not in stop:
+            anchors.append(w)
+
+    deduped: List[str] = []
+    seen: Set[str] = set()
+    for a in anchors:
+        norm = a.strip().lower()
+        if len(norm) < 3:
             continue
+        if norm not in seen:
+            seen.add(norm)
+            deduped.append(a.strip())
 
-        if "unverified" in current.lower():
-            id_to_line[fid] = f"[^{fid}]: uncertain"
-            notes.append(f"Replaced UNVERIFIED bibliography entry with uncertain: [^{fid}]")
-            continue
+    return deduped[:12]
 
-        if STRICT_BIBLIO and _looks_like_fabricated_biblio_line(current):
-            id_to_line[fid] = f"[^{fid}]: uncertain"
-            notes.append(f"Sanitized suspicious bibliography entry to uncertain: [^{fid}]")
 
-    # Rebuild bibliography deterministically in numeric order (refs first)
-    rebuilt: List[str] = []
-    for fid in refs:
-        rebuilt.append(id_to_line[fid])
+def _count_anchor_hits(text: str, anchors: List[str]) -> Tuple[int, List[str]]:
+    hit_count = 0
+    hits: List[str] = []
+    text_lc = text.lower()
+    for anchor in anchors:
+        a = anchor.lower()
+        if a in text_lc:
+            hit_count += 1
+            hits.append(anchor)
+    return hit_count, hits
 
-    # Optionally keep additional (unreferenced) bibliography entries if present
-    unref = sorted((set(id_to_line.keys()) - set(refs)), key=lambda x: int(x))
-    for fid in unref:
-        # If strict, also sanitize these if suspicious
-        ln = id_to_line[fid]
-        if STRICT_BIBLIO and ("unverified" in ln.lower() or _looks_like_fabricated_biblio_line(ln)):
-            ln = f"[^{fid}]: uncertain"
-            notes.append(f"Sanitized unreferenced suspicious entry to uncertain: [^{fid}]")
-        rebuilt.append(ln)
 
-    # Keep extras at the very top if any remain (rare)
-    final_biblio_lines = []
-    if extras:
-        final_biblio_lines.extend(extras)
-    final_biblio_lines.extend(rebuilt)
+def _validate_required_headers(body: str) -> Tuple[bool, List[str]]:
+    errors: List[str] = []
 
-    new_body = f"{main}\n\n# 📚 BIBLIOGRAPHY\n" + "\n".join(final_biblio_lines).rstrip() + "\n"
-    return new_body, notes
+    for header in REQUIRED_HEADERS:
+        if header == "# Historical Analysis":
+            if not re.search(r"^# Historical Analysis(?:\s+\[\^\d+\])?$", body, flags=re.MULTILINE):
+                errors.append("Missing or malformed '# Historical Analysis [^1]' header.")
+        elif header not in body:
+            errors.append(f"Missing required header: {header}")
+
+    return (len(errors) == 0), errors
+
+
+def _validate_placeholders(body: str, meta: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    errors: List[str] = []
+    haystacks = [body, json.dumps(meta or {}, ensure_ascii=False)]
+
+    for hay in haystacks:
+        hay_lc = hay.lower()
+        for pat in PLACEHOLDER_PATTERNS:
+            if re.search(pat, hay_lc):
+                errors.append(f"Placeholder/default text detected: pattern='{pat}'")
+
+    return (len(errors) == 0), errors
+
+
+def _validate_topic_alignment(topic: str, body: str) -> Tuple[bool, List[str]]:
+    errors: List[str] = []
+
+    main, _ = _split_biblio(body)
+    anchors = _extract_topic_anchors(topic)
+    if not anchors:
+        return True, errors
+
+    hit_count, hits = _count_anchor_hits(main, anchors)
+
+    if hit_count < MIN_TOPIC_ANCHORS:
+        errors.append(
+            f"Topic drift detected: only {hit_count} topic anchors found; "
+            f"need at least {MIN_TOPIC_ANCHORS}. Anchors={anchors}"
+        )
+
+    # Penalize body that leans too hard on broad-era language without topic anchors
+    generic_hits = 0
+    for pat in GENERIC_DRIFT_PATTERNS:
+        generic_hits += len(re.findall(pat, main.lower()))
+
+    if generic_hits >= 4 and hit_count < max(MIN_TOPIC_ANCHORS + 1, 3):
+        errors.append(
+            "Body appears dominated by broad-era prose rather than topic-specific analysis."
+        )
+
+    # Abstract should usually mention at least one anchor
+    abstract_match = re.search(
+        r"(?s)^# Abstract\s*(.*?)\n# Historical Analysis",
+        body,
+    )
+    if abstract_match:
+        abstract = abstract_match.group(1)
+        abstract_hits, _ = _count_anchor_hits(abstract, anchors)
+        if abstract_hits == 0:
+            errors.append("Abstract does not mention any topic anchor.")
+
+    return (len(errors) == 0), errors
+
+
+def _validate_body_quality(body: str) -> Tuple[bool, List[str]]:
+    errors: List[str] = []
+
+    main, _ = _split_biblio(body)
+    wc = _word_count(main)
+
+    if wc < MIN_BODY_WORDS:
+        errors.append(f"Body too short for scholarly synthesis: {wc} words.")
+    if wc > MAX_BODY_WORDS:
+        errors.append(f"Body too long: {wc} words.")
+
+    for pat in SLUDGE_PATTERNS:
+        if re.search(pat, main.lower()):
+            errors.append(f"Sludge/filler pattern detected: '{pat}'")
+
+    # Detect very long sentences that often indicate generated sludge
+    sentences = re.split(r"(?<=[.!?])\s+", _normalize_spaces(main))
+    long_sentences = [s for s in sentences if _word_count(s) > 55]
+    if len(long_sentences) >= 3:
+        errors.append(
+            "Too many overlong sentences (>55 words), suggesting uncontrolled generated prose."
+        )
+
+    # Detect footnote density so low that the piece is basically uncited
+    refs = _FOOTNOTE_REF_RE.findall(main)
+    if len(refs) == 0:
+        errors.append("No in-body footnote references found.")
+    elif len(refs) < 3:
+        errors.append("Too few in-body footnote references for claimed scholarly synthesis.")
+
+    return (len(errors) == 0), errors
 
 
 def _validate_bibliography(body: str) -> Tuple[bool, List[str]]:
@@ -358,12 +529,27 @@ def _validate_bibliography(body: str) -> Tuple[bool, List[str]]:
             "Footnotes referenced in body but missing from bibliography: " + ", ".join(missing)
         )
 
-    if STRICT_BIBLIO:
-        for ln in lines:
+    # Block uncertain for referenced citations
+    for ln in lines:
+        m = _BIB_LINE_RE.match(ln)
+        if not m:
+            errors.append(f"Non-footnote line in bibliography not allowed: {ln}")
+            continue
+
+        fid = m.group(1)
+        content = m.group(2).strip()
+        is_uncertain = content.lower() == "uncertain"
+
+        if fid in refs and is_uncertain:
+            errors.append(f"Referenced footnote [^{fid}] cannot be 'uncertain'.")
+
+        if not ALLOW_UNCERTAIN_UNREFERENCED and is_uncertain:
+            errors.append(f"Unreferenced footnote [^{fid}] cannot be 'uncertain' under current policy.")
+
+        if STRICT_BIBLIO:
             if "unverified" in ln.lower():
-                errors.append(f"Unverified bibliography entry not allowed in strict mode: {ln}")
-        for ln in lines:
-            if ln.startswith("[^") and _looks_like_fabricated_biblio_line(ln):
+                errors.append(f"Unverified bibliography entry not allowed: {ln}")
+            if _looks_like_fabricated_biblio_line(ln):
                 errors.append(f"Suspicious bibliography entry (possible fabrication): {ln}")
 
     return (len(errors) == 0), errors
@@ -371,16 +557,7 @@ def _validate_bibliography(body: str) -> Tuple[bool, List[str]]:
 
 def _validate_metadata(meta: Dict[str, Any]) -> Tuple[bool, List[str], Dict[str, Any]]:
     errors: List[str] = []
-    allowed = {
-        "title",
-        "tags",
-        "key_themes",
-        "bias_analysis",
-        "grok_ctx_reflection",
-        "quotes",
-        "adinkra",
-    }
-    meta = {k: v for k, v in (meta or {}).items() if k in allowed}
+    meta = {k: v for k, v in (meta or {}).items() if k in ALLOWED_META_KEYS}
     normalized: Dict[str, Any] = {}
 
     title = _ensure_str(meta.get("title"))
@@ -418,12 +595,117 @@ def _validate_metadata(meta: Dict[str, Any]) -> Tuple[bool, List[str], Dict[str,
     return True, errors, normalized
 
 
+def _sanitize_bibliography(body: str) -> Tuple[str, List[str]]:
+    """
+    Conservative local repair:
+    - ensures every in-body footnote id exists in bibliography
+    - replaces explicit 'unverified' entries with uncertain
+    - strips commentary lines
+    IMPORTANT:
+    - This function no longer guarantees emission.
+    - Referenced 'uncertain' still fails validation afterward.
+    """
+    notes: List[str] = []
+    main, biblio = _split_biblio(body)
+
+    if not biblio:
+        return body, notes
+
+    refs = sorted(set(_FOOTNOTE_REF_RE.findall(main)), key=lambda x: int(x))
+    id_to_line, extras = _parse_biblio_lines(biblio)
+
+    kept_extras: List[str] = []
+    for ln in extras:
+        if "unverified" in ln.lower() or "commentary" in ln.lower():
+            notes.append(f"Removed bibliography commentary line: {ln}")
+            continue
+        kept_extras.append(ln)
+    extras = kept_extras
+
+    for fid in refs:
+        current = id_to_line.get(fid)
+        if current is None:
+            id_to_line[fid] = f"[^{fid}]: uncertain"
+            notes.append(f"Added missing bibliography entry as uncertain: [^{fid}]")
+            continue
+
+        if "unverified" in current.lower():
+            id_to_line[fid] = f"[^{fid}]: uncertain"
+            notes.append(f"Replaced UNVERIFIED bibliography entry with uncertain: [^{fid}]")
+
+    rebuilt: List[str] = []
+    for fid in refs:
+        rebuilt.append(id_to_line[fid])
+
+    unref = sorted((set(id_to_line.keys()) - set(refs)), key=lambda x: int(x))
+    for fid in unref:
+        rebuilt.append(id_to_line[fid])
+
+    final_biblio_lines: List[str] = []
+    if extras:
+        final_biblio_lines.extend(extras)
+    final_biblio_lines.extend(rebuilt)
+
+    new_body = f"{main}\n\n# 📚 BIBLIOGRAPHY\n" + "\n".join(final_biblio_lines).rstrip() + "\n"
+    return new_body, notes
+
+
 def _strip_trailing_garbage(body: str) -> str:
     return body.rstrip() + "\n"
 
 
+def _collect_validation_results(
+    topic: str,
+    body: str,
+    meta: Dict[str, Any],
+) -> Tuple[bool, Dict[str, List[str]], Dict[str, Any]]:
+    """
+    Returns:
+      ok: overall pass/fail
+      errors_by_domain: grouped errors
+      normalized_meta: cleaned metadata
+    """
+    errors_by_domain: Dict[str, List[str]] = {}
+
+    ok_headers, header_errors = _validate_required_headers(body)
+    if not ok_headers:
+        errors_by_domain["headers"] = header_errors
+
+    ok_bib, bib_errors = _validate_bibliography(body)
+    if not ok_bib:
+        errors_by_domain["bibliography"] = bib_errors
+
+    ok_meta, meta_errors, meta_norm = _validate_metadata(meta)
+    if not ok_meta:
+        errors_by_domain["metadata"] = meta_errors
+
+    ok_place, place_errors = _validate_placeholders(body, meta)
+    if not ok_place:
+        errors_by_domain["placeholders"] = place_errors
+
+    if STRICT_TOPIC:
+        ok_topic, topic_errors = _validate_topic_alignment(topic, body)
+        if not ok_topic:
+            errors_by_domain["topic_alignment"] = topic_errors
+
+    if STRICT_BODY:
+        ok_body, body_errors = _validate_body_quality(body)
+        if not ok_body:
+            errors_by_domain["body_quality"] = body_errors
+
+    overall_ok = len(errors_by_domain) == 0
+    return overall_ok, errors_by_domain, meta_norm
+
+
+def _print_grouped_errors(errors_by_domain: Dict[str, List[str]]) -> None:
+    for domain, errs in errors_by_domain.items():
+        print(f"— {domain}:")
+        for err in errs:
+            print(f"  • {err}")
+
+
 # ------------------------------------------------------------------------------
-# Core Classes
+# Core classes
 # ------------------------------------------------------------------------------
 @dataclass
 class ScholarlySynapse:
@@ -447,11 +729,11 @@ class StubAgent:
 
 
 # ------------------------------------------------------------------------------
-# Main Workflow
+# Main workflow
 # ------------------------------------------------------------------------------
 def run_synthesis() -> None:
-    version = "v1.8.2"
-    print(f"✶⌁✶ SCHOLARLY DIVE {version} [HARDENED+CRITICAL] ONLINE")
+    version = "v2.0.0"
+    print(f"✶⌁✶ SCHOLARLY DIVE {version} [REFRACTORED+GATED] ONLINE")
     print(f"✶ Synapse: {DEFAULT_AGENT} identity manifested.")
 
     try:
@@ -473,40 +755,35 @@ def run_synthesis() -> None:
         while True:
             attempts += 1
 
-            # 1) Validate
-            ok_bib, bib_errors = _validate_bibliography(body)
-            ok_meta, meta_errors, meta_norm = _validate_metadata(meta)
-            hard_fail = (STRICT_BIBLIO and not ok_bib) or (STRICT_META and not ok_meta)
+            overall_ok, errors_by_domain, meta_norm = _collect_validation_results(topic, body, meta)
 
-            # 2) If bibliography fails and auto-sanitize is enabled, try local repair first
-            if hard_fail and STRICT_BIBLIO and not ok_bib and BIBLIO_AUTO_SANITIZE:
-                body2, notes = _sanitize_bibliography(body)
-                if notes:
-                    print("⚠️  Bibliography sanitized locally (release valve engaged).")
-                body = body2
-
-                # Re-validate after local repair
-                ok_bib, bib_errors = _validate_bibliography(body)
-                hard_fail = (STRICT_BIBLIO and not ok_bib) or (STRICT_META and not ok_meta)
-
-            if not hard_fail:
+            if overall_ok:
                 meta = meta_norm
                 break
 
-            # 3) If still failing, optional model repair pass (bounded)
+            # One conservative local bibliography cleanup pass before asking model to repair.
+            if attempts == 1 and "bibliography" in errors_by_domain:
+                body2, notes = _sanitize_bibliography(body)
+                if notes:
+                    print("⚠️  Conservative local bibliography cleanup applied.")
+                    for note in notes:
+                        print(f"  • {note}")
+
+                # Re-run validation after cleanup
+                overall_ok, errors_by_domain, meta_norm = _collect_validation_results(topic, body2, meta)
+                body = body2
+                if overall_ok:
+                    meta = meta_norm
+                    break
+
             if attempts > (RETRY_ON_FAIL + 1):
                 print("❌ REFUSING EMISSION: validation failed.")
-                if bib_errors:
-                    print("— Bibliography issues:")
-                    for err in bib_errors:
-                        print(f"  • {err}")
-                if meta_errors:
-                    print("— Metadata issues:")
-                    for err in meta_errors:
-                        print(f"  • {err}")
+                _print_grouped_errors(errors_by_domain)
                 sys.exit(2)
 
-            print("⚠️  Validation failed; attempting repair pass...")
+            print("⚠️  Validation failed; attempting bounded repair pass...")
+            _print_grouped_errors(errors_by_domain)
+
             repair_prompt = _build_repair_prompt(
                 body + ("\n\n### METADATA\n" + json.dumps(meta, ensure_ascii=False))
             )
@@ -517,17 +794,7 @@ def run_synthesis() -> None:
                 raise ValueError("Repair pass returned empty body content; refusing emission.")
 
         body = _strip_trailing_garbage(body)
-
-        allowed_meta_keys = {
-            "title",
-            "tags",
-            "key_themes",
-            "bias_analysis",
-            "grok_ctx_reflection",
-            "quotes",
-            "adinkra",
-        }
-        meta = {k: v for k, v in (meta or {}).items() if k in allowed_meta_keys}
+        meta = {k: v for k, v in (meta or {}).items() if k in ALLOWED_META_KEYS}
 
         payload = orch.run(
             agent_name="SCHOLARLY_STUB",
