@@ -1,9 +1,7 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.0.2 [LEAN+GATED]
+# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.3.0 [LEAN+GATED+REPAIR]
 # ==============================================================================
-# ROLE: Thin scholarly synthesis client
-# DESIGN: Prompt → Model → Minimal Gate → Orchestrator Emit
-# PURPOSE: Refuse structurally polished but epistemically weak output
+# PURPOSE: Enforce real citation discipline without bloated parsing logic
 # ==============================================================================
 
 from __future__ import annotations
@@ -19,7 +17,7 @@ from vs_enc import VSEncOrchestrator
 from watsonx_client import WatsonXClient
 
 # ------------------------------------------------------------------------------
-# ENV GUARD
+# ENV
 # ------------------------------------------------------------------------------
 if not os.getenv("WATSONX_PROJECT_ID"):
     print("❌ ERROR: WATSONX_PROJECT_ID missing.")
@@ -27,6 +25,8 @@ if not os.getenv("WATSONX_PROJECT_ID"):
 
 AGENT = os.getenv("SCHOLARLY_DIVE_AGENT", "QWEN-ECHO")
 ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
+MAX_REPAIR_ATTEMPTS = 1
+MIN_CITATIONS = 3
 
 REQUIRED_HEADERS = [
     "# Abstract",
@@ -35,83 +35,68 @@ REQUIRED_HEADERS = [
     "# 📚 BIBLIOGRAPHY",
 ]
 
-MIN_CITATIONS = 3
 FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
-BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:(.*)$", flags=re.MULTILINE)
+BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:(.+)$", re.MULTILINE)
+
+# Minimal suspicion patterns (tight, not overengineered)
+BAD_AUTHORS = {"Smith, John", "Doe, John", "Doe, Jane"}
+BAD_TITLE_PATTERNS = ["case of", "case study", "analysis of", "study of"]
 
 # ------------------------------------------------------------------------------
 # PROMPT
 # ------------------------------------------------------------------------------
 PROMPT = """\
-ROLE: You are the Algorithmic Griot.
-
-TASK: Produce a rigorous scholarly synthesis on: {topic}
+Produce a rigorous scholarly synthesis on: {topic}
 
 RULES:
-- Historiography > narrative
 - No fluff
-- No myth-making
-- Tie analysis tightly to topic
-- No tables
-- No placeholder text
-- Do not invent citations
-- Do not invent quotations
-- If you cannot support a claim, omit it
+- No invented citations
+- Use at least 3 DISTINCT in-body footnotes tied to real claims
+- Do NOT fabricate books, reports, or institutions
+- If support is weak, say so
 
-REQUIRED STRUCTURE:
+STRUCTURE:
 # Abstract
-# Historical Analysis [^1]
-## Historiography & Scholarly Debate
-## Material Conditions & Enforcement
-## Agency & Counter-Agency
-## Contradictions / Limits / Exemptions
+# Historical Analysis
 # Semiotic Analysis
-## Myth / National Narrative (Interrogate, do not affirm)
-## Rhetorical Mechanics
 # 📚 BIBLIOGRAPHY
 
 CITATIONS:
-- Use [^1] style footnotes in the body
-- Include at least 3 in-body footnote references attached to concrete claims
-- Bibliography must match footnotes
-- Bibliography lines must use exactly this format:
-  [^1]: Author. *Title* (Publisher, Year).
-  OR
-  [^1]: Institution. *Report Title* (Year).
-- No bullet lists in bibliography
-- Do not list sources that are not actually cited in the body
+- Use [^1] style
+- Bibliography must match body exactly
+- No extra entries
 
 METADATA:
-Return JSON at the end labeled ### METADATA with:
-title, tags, key_themes, bias_analysis, grok_ctx_reflection, quotes, adinkra
+Return JSON after ### METADATA
+"""
 
-METADATA RULES:
-- quotes must be a list of strings
-- every quote string must include attribution inside the same string, e.g.:
-  "Quote text — Author/Source"
-- if you do not have a real attributable quote, return quotes as an empty list
+REPAIR_PROMPT = """\
+Fix this report so it passes validation.
 
-Return only the report and metadata.
+ERROR:
+{error}
+
+RULES:
+- Keep structure
+- Remove fake citations
+- Ensure at least 3 distinct real citations
+- Ensure body ↔ bibliography match
+
+REPORT:
+{report}
 """
 
 # ------------------------------------------------------------------------------
-# BASIC PARSING
+# PARSE
 # ------------------------------------------------------------------------------
 def extract_metadata(text: str) -> Tuple[str, Dict[str, Any]]:
     if "### METADATA" not in text:
         return text.strip(), {}
 
     body, tail = text.split("### METADATA", 1)
-    tail = tail.strip()
 
     try:
-        start = tail.find("{")
-        end = tail.rfind("}") + 1
-        if start == -1 or end <= 0:
-            return body.strip(), {}
-        meta = json.loads(tail[start:end])
-        if not isinstance(meta, dict):
-            meta = {}
+        meta = json.loads(tail.strip())
     except Exception:
         meta = {}
 
@@ -119,74 +104,73 @@ def extract_metadata(text: str) -> Tuple[str, Dict[str, Any]]:
 
 
 # ------------------------------------------------------------------------------
-# VALIDATION
+# VALIDATION (LEAN)
 # ------------------------------------------------------------------------------
-def _collect_body_footnotes(body: str) -> List[str]:
-    main = body.split("# 📚 BIBLIOGRAPHY", 1)[0]
+def _split(body: str):
+    if "# 📚 BIBLIOGRAPHY" not in body:
+        return body, ""
+    return body.split("# 📚 BIBLIOGRAPHY", 1)
+
+
+def _body_refs(body: str) -> List[str]:
+    main, _ = _split(body)
     return FOOTNOTE_REF_RE.findall(main)
 
 
-def _collect_bibliography_ids(body: str) -> List[str]:
-    if "# 📚 BIBLIOGRAPHY" not in body:
-        return []
-    _, biblio = body.split("# 📚 BIBLIOGRAPHY", 1)
-    return re.findall(r"^\[\^(\d+)\]:", biblio, flags=re.MULTILINE)
+def _bib_ids(body: str) -> List[str]:
+    _, bib = _split(body)
+    return re.findall(r"\[\^(\d+)\]:", bib)
 
 
-def _bibliography_has_only_footnote_lines(body: str) -> bool:
-    if "# 📚 BIBLIOGRAPHY" not in body:
-        return False
-
-    _, biblio = body.split("# 📚 BIBLIOGRAPHY", 1)
-    lines = [ln.strip() for ln in biblio.splitlines() if ln.strip()]
-    if not lines:
-        return False
-
-    for line in lines:
-        if not BIB_LINE_RE.match(line):
-            return False
-    return True
+def _bib_lines(body: str) -> List[str]:
+    _, bib = _split(body)
+    return [l.strip() for l in bib.splitlines() if l.strip()]
 
 
-def _has_attributed_quotes(meta: Dict[str, Any]) -> bool:
-    quotes = meta.get("quotes", [])
-    if quotes is None:
+def _has_fake_patterns(line: str) -> bool:
+    lower = line.lower()
+
+    # generic fake titles
+    if any(p in lower for p in BAD_TITLE_PATTERNS):
         return True
-    if not isinstance(quotes, list):
-        return False
-    for q in quotes:
-        if not isinstance(q, str):
-            return False
-        if "—" not in q and " - " not in q:
-            return False
-    return True
+
+    # fake authors
+    for a in BAD_AUTHORS:
+        if a.lower() in lower:
+            return True
+
+    return False
 
 
 def validate(body: str, meta: Dict[str, Any]) -> Tuple[bool, str]:
-    if not body.strip():
+    if not body:
         return False, "Empty output"
 
-    for header in REQUIRED_HEADERS:
-        if header not in body:
-            return False, f"Missing required section: {header}"
+    for h in REQUIRED_HEADERS:
+        if h not in body:
+            return False, f"Missing section: {h}"
 
-    body_refs = _collect_body_footnotes(body)
-    if len(body_refs) < MIN_CITATIONS:
-        return False, f"Insufficient citation binding: found {len(body_refs)} in-body footnotes"
+    refs = _body_refs(body)
+    unique_refs = set(refs)
 
-    bib_ids = _collect_bibliography_ids(body)
+    if len(unique_refs) < MIN_CITATIONS:
+        return False, f"Only {len(unique_refs)} distinct citations"
+
+    bib_ids = _bib_ids(body)
     if not bib_ids:
-        return False, "Missing bibliography entries"
+        return False, "Missing bibliography"
 
-    if not _bibliography_has_only_footnote_lines(body):
-        return False, "Bibliography contains non-footnote lines"
+    # match body ↔ bibliography
+    if set(refs) != set(bib_ids):
+        return False, "Citation mismatch between body and bibliography"
 
-    missing = sorted(set(body_refs) - set(bib_ids), key=int)
-    if missing:
-        return False, f"Body footnotes missing from bibliography: {', '.join(missing)}"
+    # format check
+    for line in _bib_lines(body):
+        if not BIB_LINE_RE.match(line):
+            return False, "Invalid bibliography format"
 
-    if not _has_attributed_quotes(meta):
-        return False, "Metadata quotes must include inline attribution"
+        if _has_fake_patterns(line):
+            return False, f"Suspicious citation: {line}"
 
     return True, ""
 
@@ -198,45 +182,54 @@ def validate(body: str, meta: Dict[str, Any]) -> Tuple[bool, str]:
 class Synapse:
     agent: str = AGENT
 
-    def __post_init__(self) -> None:
+    def __post_init__(self):
         self.client = WatsonXClient()
         self.client.set_agent(self.agent)
-        print(f"✶ Synapse: {self.agent} identity manifested.")
+        print(f"✶ Synapse: {self.agent} online")
 
     def ask(self, prompt: str) -> str:
         return self.client.ask(prompt, max_new_tokens=2000)
 
 
 # ------------------------------------------------------------------------------
-# LOCAL PASS-THROUGH ORCHESTRATOR AGENT
+# CORE
 # ------------------------------------------------------------------------------
-class OrchestratorAgent:
-    def run(self, text: str) -> str:
-        return text
+def generate(s: Synapse, topic: str):
+    raw = s.ask(PROMPT.format(topic=topic))
+    body, meta = extract_metadata(raw)
+    ok, err = validate(body, meta)
+    return body, meta, ok, err
+
+
+def repair(s: Synapse, topic: str, report: str, error: str):
+    raw = s.ask(REPAIR_PROMPT.format(report=report, error=error))
+    body, meta = extract_metadata(raw)
+    ok, err = validate(body, meta)
+    return body, meta, ok, err
 
 
 # ------------------------------------------------------------------------------
 # MAIN
 # ------------------------------------------------------------------------------
-def run() -> None:
-    print("✶⌁✶ SCHOLARLY DIVE v3.0.2 [LEAN+GATED] ONLINE")
+def run():
+    print("✶⌁✶ SCHOLARLY DIVE v3.3.0 [LEAN] ONLINE")
 
     topic = input("Enter Research Topic: ").strip()
     if not topic:
-        print("❌ No topic provided.")
+        print("❌ No topic")
         return
 
-    prompt = PROMPT.format(topic=topic)
-
-    synapse = Synapse()
-    orch = VSEncOrchestrator({"orchestrator": OrchestratorAgent()})
+    syn = Synapse()
+    orch = VSEncOrchestrator({"orchestrator": lambda x: x})
 
     print(f"✶ Synthesizing: {topic}")
 
-    raw = synapse.ask(prompt)
-    body, meta = extract_metadata(raw)
+    body, meta, ok, err = generate(syn, topic)
 
-    ok, err = validate(body, meta)
+    if not ok:
+        print(f"⚠ Failed: {err}")
+        body, meta, ok, err = repair(syn, topic, body, err)
+
     if not ok:
         print(f"❌ REFUSED: {err}")
         return
@@ -252,24 +245,13 @@ def run() -> None:
             "longform_summary": "See full analysis.",
             "category": "research",
             "style": "AlgorithmicGriot",
-            "priority": "medium",
             "status": "active",
-            "tags": meta.get("tags", []),
-            "key_themes": meta.get("key_themes", []),
-            "bias_analysis": meta.get("bias_analysis", "Grounded scholarly synthesis."),
-            "grok_ctx_reflection": meta.get(
-                "grok_ctx_reflection",
-                "Research artifact generated through scholarly_dive."
-            ),
-            "quotes": meta.get("quotes", []),
-            "adinkra": meta.get("adinkra", []),
         },
     )
 
     orch.emit_to_vault(payload)
-    print("✓ Emitted successfully")
+    print("✓ Emitted")
 
 
-# ------------------------------------------------------------------------------
 if __name__ == "__main__":
     run()
