@@ -1,5 +1,5 @@
 # ==============================================================================
-# ✶⌁✶ qwen_echo.py — THE CONSOLIDATED ECHO ENGINE v4.3.0 [AUDITED + HARDENED]
+# ✶⌁✶ qwen_echo.py — THE CONSOLIDATED ECHO ENGINE v4.3.1 [REPAIRED + HARDENED]
 # ==============================================================================
 # ROLE: Flagship refinery client via VS-ENC v1.0.0.
 # COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
@@ -7,24 +7,16 @@
 #   - Apply a selected Anacostia summary/refinery protocol to source text
 #   - Emit structured artifacts through VS-ENC
 #   - Preserve debug receipts for auditability
-# ==============================================================================
-#
-# HARDENING NOTES:
-#   1. Added debug logging for source length, protocol extraction, compiled prompt,
-#      and raw model output.
-#   2. Strengthened prompt to resist generic, topic-only summaries.
-#   3. Added basic specificity gate to catch mushy emissions.
-#   4. Added optional UBW refinement pass when first-pass output looks generic.
-#   5. Improved input sanitation and validation.
-#   6. Added clearer failure messages and receipt preservation.
+#   - Prevent invalid emissions (raw-source replay / missing structure)
 # ==============================================================================
 
 import os
 import sys
 import re
+from difflib import SequenceMatcher
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List
 
 from watsonx_client import WatsonXClient
 from vs_enc import VSEncOrchestrator
@@ -47,6 +39,7 @@ STYLE_GUIDE_PATH = (
 DEBUG_ROOT = VAULT_ROOT / ARTIFACT_ROOT / "_debug"
 
 PST = timezone(timedelta(hours=-8))
+
 GENERIC_MARKERS = [
     "systemic racism",
     "despite progress",
@@ -59,6 +52,7 @@ GENERIC_MARKERS = [
     "persistent challenges",
     "root causes of inequality",
 ]
+
 STYLE_ALIASES = {
     "ubw": "UBW",
     "sankofacut": "SankofaCut",
@@ -110,6 +104,14 @@ def slugify(value: str) -> str:
     return value.strip("_") or "untitled"
 
 
+def normalize_ws(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def similarity(a: str, b: str) -> float:
+    return SequenceMatcher(None, normalize_ws(a), normalize_ws(b)).ratio()
+
+
 def resolve_style_name(style_name: str, available: Dict[str, str]) -> Optional[str]:
     """
     Resolve style name robustly against extracted style guide names.
@@ -140,7 +142,7 @@ def detect_source_profile(text: str) -> str:
     """
     word_count = len(text.split())
 
-    signals = []
+    signals: List[str] = []
     if word_count > 6000:
         signals.append("longform")
     elif word_count > 2500:
@@ -162,7 +164,7 @@ def detect_source_profile(text: str) -> str:
 
 def count_named_signals(text: str) -> int:
     """
-    Very rough heuristic for specific named content.
+    Rough heuristic for specific named content.
     """
     patterns = [
         r"\b[A-Z][a-z]+ [A-Z][a-z]+\b",  # two-word proper names
@@ -180,6 +182,52 @@ def generic_score(text: str) -> int:
     return sum(1 for marker in GENERIC_MARKERS if marker in lowered)
 
 
+def contains_large_source_span(output_text: str, source_text: str, span: int = 700) -> bool:
+    """
+    Detects obvious raw-source replay by checking whether a large normalized span
+    of the source appears inside the output.
+    """
+    source_norm = normalize_ws(source_text)
+    output_norm = normalize_ws(output_text)
+
+    if len(source_norm) < span or len(output_norm) < span:
+        return False
+
+    head = source_norm[:span]
+    mid_start = max(0, len(source_norm) // 2 - span // 2)
+    middle = source_norm[mid_start:mid_start + span]
+    tail = source_norm[-span:]
+
+    return head in output_norm or middle in output_norm or tail in output_norm
+
+
+def looks_like_article_replay(output_text: str, title: str) -> bool:
+    """
+    Catches obvious article-style replay with title/byline/publication language.
+    """
+    lowered = output_text.lower()
+    title_lower = title.strip().lower()
+
+    replay_signals = 0
+
+    if output_text.strip().lower().startswith(title_lower):
+        replay_signals += 1
+
+    if "by " in lowered[:200]:
+        replay_signals += 1
+
+    if "june 2014 issue" in lowered:
+        replay_signals += 1
+
+    if "share" in lowered[:500] and "save" in lowered[:500]:
+        replay_signals += 1
+
+    if "editor’s note" in lowered or "editor's note" in lowered:
+        replay_signals += 1
+
+    return replay_signals >= 2
+
+
 def fails_specificity_gate(text: str, style_name: str) -> Tuple[bool, str]:
     """
     Coarse quality gate.
@@ -191,12 +239,45 @@ def fails_specificity_gate(text: str, style_name: str) -> Tuple[bool, str]:
     score = generic_score(text)
     named_signals = count_named_signals(text)
 
-    # UBW is the style where evidence/mechanism drift hurts most.
     if style_name == "UBW":
         if score >= 4 and named_signals < 12:
             return True, (
                 "UBW emission appears overly generic: too many generic markers and "
                 "insufficient named examples/mechanisms."
+            )
+
+    return False, ""
+
+
+def fails_structure_gate(
+    text: str,
+    style_name: str,
+    source_text: str,
+    title: str,
+) -> Tuple[bool, str]:
+    """
+    Hard validity gate.
+    Rejects raw-source replay and style-invalid emissions.
+    """
+    lowered = text.lower()
+
+    if contains_large_source_span(text, source_text):
+        return True, "Output appears to contain a large raw-source span."
+
+    if looks_like_article_replay(text, title):
+        return True, "Output appears to replay article title/byline/body formatting."
+
+    source_head = normalize_ws(source_text[:1200])
+    output_norm = normalize_ws(text)
+    if source_head and source_head in output_norm:
+        return True, "Output contains the opening section of the raw source."
+
+    if style_name == "UBW":
+        required = ["origins", "modifications", "current state"]
+        missing = [section for section in required if section not in lowered]
+        if missing:
+            return True, (
+                "UBW emission missing required sections: " + ", ".join(missing)
             )
 
     return False, ""
@@ -209,16 +290,15 @@ def extract_styles_from_guide(content: str) -> Dict[str, str]:
     """
     Extract style blocks from summary_styles_guide.md.
 
-    This implementation is more forgiving than the original regex-only approach.
-    It scans for numbered bold headings and captures until the next numbered bold
-    heading. It expects lines like:
-        1. **SankofaCut**
-        3. **UBW — ...**
+    Supports headings like:
+        # 🔷 1. **SankofaCut — Strategic Micro-Brief**
+        # 🧱 2. **Abolition Systems Cut (ASC)**
+        # 🔷 3. **UBW — Universal Black Wisdom**
     """
     lines = content.splitlines()
     header_re = re.compile(r"^\s*#.*?\d+\.\s+\*\*(.+?)\*\*\s*$")
 
-    headers = []
+    headers: List[Tuple[int, str]] = []
     for idx, line in enumerate(lines):
         match = header_re.match(line)
         if match:
@@ -270,6 +350,41 @@ class EchoSynapse:
     def build_prompt(self, data: str) -> str:
         profile = detect_source_profile(data)
 
+        if self.style_name == "UBW":
+            prompt = (
+                f"INSTRUCTION: Apply the '{self.style_name}' protocol to the source text below.\n\n"
+                f"PROTOCOL_RULES:\n{self.protocol_text}\n\n"
+                "NON-NEGOTIABLE REQUIREMENTS:\n"
+                "- Analyze the source's actual argument, not just its general topic.\n"
+                "- Use specific names, events, institutions, policies, or mechanisms from the source whenever available.\n"
+                "- Do not produce a generic historical overview.\n"
+                "- Preserve causal logic, chronology, and material specificity.\n"
+                "- If the source makes a concrete case, reflect that case directly.\n"
+                "- NEVER reproduce the article text, opening lines, or section prose.\n"
+                "- NEVER return the source title, byline, share/save labels, editor's note, or article body.\n"
+                "- The output must be a transformed analytical artifact, not a restatement or excerpt.\n"
+                "- Do NOT return the raw transcript.\n"
+                "- Do NOT echo the input data.\n"
+                "- Use the exact headings: UBW_ANALYSIS, Origins, Modifications, Current State, Conclusion.\n"
+                "- Return only the UBW analysis artifact.\n\n"
+                "OUTPUT TEMPLATE:\n"
+                "UBW_ANALYSIS:\n"
+                "**Jurisdiction:** Diasporic grounding and power-structure decoding.\n"
+                "**Structure:** Origins → Modifications → Current State.\n"
+                "**Purpose:** Restoring lineage and historical depth to contemporary signals.\n\n"
+                "**Origins:**\n"
+                "[source-grounded analysis]\n\n"
+                "**Modifications:**\n"
+                "[source-grounded analysis]\n\n"
+                "**Current State:**\n"
+                "[source-grounded analysis]\n\n"
+                "**Conclusion:**\n"
+                "[tight synthetic close]\n\n"
+                f"SOURCE_PROFILE: {profile}\n\n"
+                f"SOURCE_TEXT:\n{data}"
+            )
+            return prompt
+
         prompt = (
             f"INSTRUCTION: Apply the '{self.style_name}' protocol to the source text below.\n\n"
             f"PROTOCOL_RULES:\n{self.protocol_text}\n\n"
@@ -279,7 +394,7 @@ class EchoSynapse:
             "- Do not produce a generic historical overview.\n"
             "- Preserve causal logic, chronology, and material specificity.\n"
             "- If the source makes a concrete case, reflect that case directly.\n"
-            "- Avoid vague summary language unless the source itself is vague.\n"
+            "- NEVER reproduce the article text, opening lines, or section prose.\n"
             "- Do NOT return the raw transcript.\n"
             "- Do NOT echo the input data.\n"
             f"- Return only the analysis defined by the {self.style_name} standard.\n\n"
@@ -293,25 +408,55 @@ class EchoSynapse:
         save_text(self.debug_session_dir / "compiled_prompt.txt", compiled_prompt)
         return self.client.ask(compiled_prompt, max_new_tokens=max_new_tokens)
 
-    def refine_ubw(self, source_text: str, first_pass: str) -> str:
+    def repair_invalid_output(self, source_text: str, invalid_output: str) -> str:
         """
-        Second-pass repair for weak UBW emissions.
+        Second-pass repair for invalid or replay-like emissions.
         """
+        if self.style_name == "UBW":
+            prompt = (
+                "You produced an invalid UBW artifact.\n\n"
+                "WHY IT IS INVALID:\n"
+                "- It replayed source text and/or failed UBW structure.\n\n"
+                "TASK:\n"
+                "- Rewrite from scratch as a valid UBW emission.\n"
+                "- Do NOT quote or reproduce article prose.\n"
+                "- Do NOT return the title, byline, or article body.\n"
+                "- Use source-grounded names, policies, mechanisms, and examples.\n"
+                "- Preserve UBW structure exactly.\n"
+                "- Return only the repaired UBW artifact.\n\n"
+                "REQUIRED TEMPLATE:\n"
+                "UBW_ANALYSIS:\n"
+                "**Jurisdiction:** Diasporic grounding and power-structure decoding.\n"
+                "**Structure:** Origins → Modifications → Current State.\n"
+                "**Purpose:** Restoring lineage and historical depth to contemporary signals.\n\n"
+                "**Origins:**\n"
+                "[source-grounded analysis]\n\n"
+                "**Modifications:**\n"
+                "[source-grounded analysis]\n\n"
+                "**Current State:**\n"
+                "[source-grounded analysis]\n\n"
+                "**Conclusion:**\n"
+                "[tight synthetic close]\n\n"
+                f"UBW_PROTOCOL_RULES:\n{self.protocol_text}\n\n"
+                f"SOURCE_TEXT:\n{source_text}\n\n"
+                f"INVALID_OUTPUT:\n{invalid_output}"
+            )
+            save_text(self.debug_session_dir / "repair_prompt.txt", prompt)
+            return self.client.ask(prompt, max_new_tokens=2500)
+
         prompt = (
-            "You are refining a UBW emission that is too generic.\n\n"
+            "You produced an invalid refinery artifact.\n\n"
             "TASK:\n"
-            "- Rewrite the analysis so it is grounded in the source's actual argument.\n"
-            "- Increase specificity.\n"
-            "- Add concrete names, policies, institutions, events, and mechanisms from the source.\n"
-            "- Preserve UBW structure: Origins → Modifications → Current State.\n"
-            "- Do not drift into a generic overview.\n"
-            "- Do not add made-up details.\n"
-            "- Return only the refined UBW analysis.\n\n"
-            f"UBW_PROTOCOL_RULES:\n{self.protocol_text}\n\n"
-            f"ORIGINAL_SOURCE_TEXT:\n{source_text}\n\n"
-            f"WEAK_FIRST_PASS:\n{first_pass}"
+            "- Rewrite from scratch as a valid analysis artifact.\n"
+            "- Do NOT quote or replay the source text.\n"
+            "- Do NOT return title/byline/article formatting.\n"
+            "- Follow the selected protocol exactly.\n"
+            "- Return only the repaired artifact.\n\n"
+            f"PROTOCOL_RULES:\n{self.protocol_text}\n\n"
+            f"SOURCE_TEXT:\n{source_text}\n\n"
+            f"INVALID_OUTPUT:\n{invalid_output}"
         )
-        save_text(self.debug_session_dir / "ubw_refinement_prompt.txt", prompt)
+        save_text(self.debug_session_dir / "repair_prompt.txt", prompt)
         return self.client.ask(prompt, max_new_tokens=2500)
 
 
@@ -356,7 +501,7 @@ def write_debug_receipts(
     save_text(debug_session_dir / "source_tail.txt", truncate_for_preview(raw_data[-4000:], 4000))
 
 
-def prompt_for_protocol_choice(style_names: list[str]) -> str:
+def prompt_for_protocol_choice(style_names: List[str]) -> str:
     while True:
         raw = input("\nSelect Protocol: ").strip()
         if not raw:
@@ -378,8 +523,39 @@ def prompt_for_protocol_choice(style_names: list[str]) -> str:
         print("⚠️ Protocol not recognized. Use number or exact style name.")
 
 
+def validate_output(
+    processed_content: str,
+    resolved_style: str,
+    raw_data: str,
+    title: str,
+    debug_session_dir: Path,
+    pass_name: str,
+) -> Tuple[bool, str]:
+    failed_structure, structure_reason = fails_structure_gate(
+        processed_content, resolved_style, raw_data, title
+    )
+    if failed_structure:
+        save_text(
+            debug_session_dir / f"{pass_name}_structure_gate_failure.txt",
+            structure_reason,
+        )
+        return True, structure_reason
+
+    failed_specificity, specificity_reason = fails_specificity_gate(
+        processed_content, resolved_style
+    )
+    if failed_specificity:
+        save_text(
+            debug_session_dir / f"{pass_name}_specificity_gate_failure.txt",
+            specificity_reason,
+        )
+        return True, specificity_reason
+
+    return False, ""
+
+
 def run_refinery() -> None:
-    print("✶⌁✶ QWEN-ECHO REFINERY v4.3.0 [AUDITED + HARDENED] ONLINE")
+    print("✶⌁✶ QWEN-ECHO REFINERY v4.3.1 [REPAIRED + HARDENED] ONLINE")
 
     try:
         ensure_debug_root()
@@ -416,7 +592,9 @@ def run_refinery() -> None:
             raise ValueError(f"Protocol extraction failed for style: {resolved_style}")
 
         debug_session_dir = build_debug_session_dir(resolved_style, title)
-        write_debug_receipts(debug_session_dir, resolved_style, protocol_text, source_path, raw_data)
+        write_debug_receipts(
+            debug_session_dir, resolved_style, protocol_text, source_path, raw_data
+        )
 
         print("✶ Synapse: QWEN-ECHO identity manifested.")
         print(f"✶ DEBUG session dir: {debug_session_dir}")
@@ -428,27 +606,40 @@ def run_refinery() -> None:
         synapse = EchoSynapse(resolved_style, protocol_text, debug_session_dir)
         orch = VSEncOrchestrator({"ECHO_STUB": StubAgent()})
 
+        # PASS 1
         processed_content = synapse.ask(raw_data, max_new_tokens=3000)
         save_text(debug_session_dir / "raw_model_output_pass1.txt", processed_content)
 
-        failed_gate, reason = fails_specificity_gate(processed_content, resolved_style)
-        if failed_gate and resolved_style == "UBW":
-            print(f"⚠️ UBW specificity gate triggered: {reason}")
-            print("✶ Running UBW refinement pass...")
-            processed_content = synapse.refine_ubw(raw_data, processed_content)
-            save_text(debug_session_dir / "raw_model_output_pass2_refined.txt", processed_content)
+        failed_pass1, reason_pass1 = validate_output(
+            processed_content,
+            resolved_style,
+            raw_data,
+            title,
+            debug_session_dir,
+            "pass1",
+        )
 
-            failed_gate_2, reason_2 = fails_specificity_gate(processed_content, resolved_style)
-            if failed_gate_2:
-                save_text(debug_session_dir / "specificity_gate_failure.txt", reason_2)
+        # PASS 2 (repair) if invalid
+        if failed_pass1:
+            print(f"⚠️ First pass invalid: {reason_pass1}")
+            print("✶ Running repair pass...")
+            processed_content = synapse.repair_invalid_output(raw_data, processed_content)
+            save_text(debug_session_dir / "raw_model_output_pass2_repaired.txt", processed_content)
+
+            failed_pass2, reason_pass2 = validate_output(
+                processed_content,
+                resolved_style,
+                raw_data,
+                title,
+                debug_session_dir,
+                "pass2",
+            )
+
+            if failed_pass2:
                 raise ValueError(
-                    "UBW emission failed specificity gate even after refinement. "
-                    f"Reason: {reason_2}"
+                    "Emission failed validation after repair pass. "
+                    f"Reason: {reason_pass2}"
                 )
-
-        elif failed_gate:
-            save_text(debug_session_dir / "specificity_gate_failure.txt", reason)
-            print(f"⚠️ Specificity gate warning: {reason}")
 
         is_research = classify_research_title(title)
         rel_dir = f"{ARTIFACT_ROOT}/{'research' if is_research else 'summaries'}"
