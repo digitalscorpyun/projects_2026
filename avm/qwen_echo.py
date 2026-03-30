@@ -1,5 +1,5 @@
 # ==============================================================================
-# ✶⌁✶ qwen_echo.py — THE CONSOLIDATED ECHO ENGINE v4.3.1 [REPAIRED + HARDENED]
+# ✶⌁✶ qwen_echo.py — THE CONSOLIDATED ECHO ENGINE v4.3.2 [SOURCE-DENSITY ENFORCED]
 # ==============================================================================
 # ROLE: Flagship refinery client via VS-ENC v1.0.0.
 # COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
@@ -8,6 +8,7 @@
 #   - Emit structured artifacts through VS-ENC
 #   - Preserve debug receipts for auditability
 #   - Prevent invalid emissions (raw-source replay / missing structure)
+#   - Enforce source-density so UBW cannot pass as generic thematic summary
 # ==============================================================================
 
 import os
@@ -249,6 +250,29 @@ def fails_specificity_gate(text: str, style_name: str) -> Tuple[bool, str]:
     return False, ""
 
 
+def fails_source_density_gate(text: str, style_name: str) -> Tuple[bool, str]:
+    """
+    Ensures the model actually uses concrete elements from the source.
+    This is stricter than general specificity and is especially important for UBW.
+    """
+    if style_name != "UBW":
+        return False, ""
+
+    entity_hits = len(re.findall(r"\b[A-Z][a-z]+ [A-Z][a-z]+\b", text))
+    year_hits = len(re.findall(r"\b(18|19|20)\d{2}\b", text))
+    org_hits = len(re.findall(r"\b(FHA|FBI|DHS|HUD|HR\s?\d+|NAACP|HOLC)\b", text))
+
+    total_signals = entity_hits + year_hits + org_hits
+
+    if total_signals < 6:
+        return True, (
+            "UBW emission lacks source-specific anchors "
+            "(names, years, institutions)."
+        )
+
+    return False, ""
+
+
 def fails_structure_gate(
     text: str,
     style_name: str,
@@ -357,6 +381,9 @@ class EchoSynapse:
                 "NON-NEGOTIABLE REQUIREMENTS:\n"
                 "- Analyze the source's actual argument, not just its general topic.\n"
                 "- Use specific names, events, institutions, policies, or mechanisms from the source whenever available.\n"
+                "- You MUST include at least 3 specific named actors, organizations, or places from the source.\n"
+                "- You MUST include at least 1 concrete policy, mechanism, or institutional practice from the source.\n"
+                "- Outputs that remain general or abstract will be considered invalid.\n"
                 "- Do not produce a generic historical overview.\n"
                 "- Preserve causal logic, chronology, and material specificity.\n"
                 "- If the source makes a concrete case, reflect that case directly.\n"
@@ -416,12 +443,14 @@ class EchoSynapse:
             prompt = (
                 "You produced an invalid UBW artifact.\n\n"
                 "WHY IT IS INVALID:\n"
-                "- It replayed source text and/or failed UBW structure.\n\n"
+                "- It replayed source text, failed structure, and/or lacked source density.\n\n"
                 "TASK:\n"
                 "- Rewrite from scratch as a valid UBW emission.\n"
                 "- Do NOT quote or reproduce article prose.\n"
                 "- Do NOT return the title, byline, or article body.\n"
                 "- Use source-grounded names, policies, mechanisms, and examples.\n"
+                "- Include at least 3 named actors, organizations, or places from the source.\n"
+                "- Include at least 1 policy, institution, or mechanism from the source.\n"
                 "- Preserve UBW structure exactly.\n"
                 "- Return only the repaired UBW artifact.\n\n"
                 "REQUIRED TEMPLATE:\n"
@@ -551,11 +580,21 @@ def validate_output(
         )
         return True, specificity_reason
 
+    failed_density, density_reason = fails_source_density_gate(
+        processed_content, resolved_style
+    )
+    if failed_density:
+        save_text(
+            debug_session_dir / f"{pass_name}_density_gate_failure.txt",
+            density_reason,
+        )
+        return True, density_reason
+
     return False, ""
 
 
 def run_refinery() -> None:
-    print("✶⌁✶ QWEN-ECHO REFINERY v4.3.1 [REPAIRED + HARDENED] ONLINE")
+    print("✶⌁✶ QWEN-ECHO REFINERY v4.3.2 [SOURCE-DENSITY ENFORCED] ONLINE")
 
     try:
         ensure_debug_root()
