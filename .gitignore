@@ -40,3 +40,9 @@ crash_course_projects/**/__pycache__/
 # --- External Nested Repositories ---
 # Rationale: Keeping separate git repositories independent (azure-labs has its own remote)
 azure-labs/
+
+# generated debug receipts
+avm/_debug/
+
+# generated local artifacts
+war_council/_artifacts/
