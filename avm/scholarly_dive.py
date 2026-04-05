@@ -1,5 +1,5 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.3.6 [LEAN+SOFT-GATED+RECOVERY]
+# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.3.7 [LEAN+SOFT-GATED+ZERO-RECOVERY]
 # ==============================================================================
 
 from __future__ import annotations
@@ -24,9 +24,6 @@ AGENT = os.getenv("SCHOLARLY_DIVE_AGENT", "QWEN-ECHO")
 ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
 DEBUG_DIR = Path("C:/Users/digitalscorpyun/projects_2026/avm/_debug/scholarly_dive")
 
-# Citation policy:
-# - TARGET_CITATIONS is the preferred strength threshold
-# - MIN_REQUIRED_CITATIONS is the actual refusal floor
 TARGET_CITATIONS = 3
 MIN_REQUIRED_CITATIONS = 1
 
@@ -164,6 +161,32 @@ DRAFT:
 {draft}
 """
 
+ZERO_CITATION_RESCUE_PROMPT = """\
+Your last response kept failing because it contained ZERO in-body footnotes.
+
+Rewrite on: {topic}
+
+ABSOLUTE REQUIREMENTS:
+- Preserve this exact top-level structure:
+  # Abstract
+  # Historical Analysis
+  # Semiotic Analysis
+  # 📚 BIBLIOGRAPHY
+- Preserve ### METADATA with valid JSON
+- If you have even ONE usable source, include exactly ONE matched body footnote and one bibliography line
+- If evidence is weak, say so explicitly
+- Do not invent bibliography entries
+- Do not invent quotations
+- If you cannot support a claim, omit it
+- Return only the rewritten report and metadata
+
+SCAFFOLD:
+{scaffold}
+
+FAILED DRAFT:
+{draft}
+"""
+
 
 def now_pst() -> datetime:
     return datetime.now(PST)
@@ -260,6 +283,12 @@ def _meta_normalize(meta: Dict[str, Any]) -> Dict[str, Any]:
         meta["tags"] = []
     if not isinstance(meta.get("key_themes"), list):
         meta["key_themes"] = []
+    if not isinstance(meta.get("bias_analysis"), str):
+        meta["bias_analysis"] = ""
+    if not isinstance(meta.get("grok_ctx_reflection"), str):
+        meta["grok_ctx_reflection"] = ""
+    if not isinstance(meta.get("title"), str):
+        meta["title"] = ""
     return meta
 
 
@@ -269,6 +298,12 @@ class ValidationResult:
     error: str = ""
     warnings: List[str] = field(default_factory=list)
     distinct_citations: int = 0
+    salvageable_zero_citation: bool = False
+    fallback_emitted: bool = False
+
+
+def _has_required_headers(body: str) -> bool:
+    return all(h in body for h in REQUIRED_HEADERS)
 
 
 def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
@@ -279,15 +314,24 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         if h not in body:
             return ValidationResult(False, f"Missing section: {h}")
 
+    if not _quotes_ok(meta):
+        return ValidationResult(False, "Invalid metadata quotes")
+
     refs = set(_body_refs(body))
     ref_count = len(refs)
 
-    if ref_count < MIN_REQUIRED_CITATIONS:
+    # Zero-citation outputs are now recoverable if the structure exists.
+    if ref_count == 0:
         return ValidationResult(
             False,
-            f"Only {ref_count} distinct citations",
-            distinct_citations=ref_count,
+            "Only 0 distinct citations",
+            warnings=["Zero-citation draft is structurally present but not yet source-anchored."],
+            distinct_citations=0,
+            salvageable_zero_citation=True,
         )
+
+    if ref_count < MIN_REQUIRED_CITATIONS:
+        return ValidationResult(False, f"Only {ref_count} distinct citations", distinct_citations=ref_count)
 
     bib_ids = set(_bib_ids(body))
     if not bib_ids:
@@ -309,9 +353,6 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
             return ValidationResult(False, "Invalid bibliography format", distinct_citations=ref_count)
         if _has_fake_patterns(line):
             return ValidationResult(False, f"Suspicious citation: {line}", distinct_citations=ref_count)
-
-    if not _quotes_ok(meta):
-        return ValidationResult(False, "Invalid metadata quotes", distinct_citations=ref_count)
 
     warnings: List[str] = []
     if ref_count < TARGET_CITATIONS:
@@ -365,6 +406,8 @@ def _attempt(
                 "error": result.error,
                 "warnings": result.warnings,
                 "distinct_citations": result.distinct_citations,
+                "salvageable_zero_citation": result.salvageable_zero_citation,
+                "fallback_emitted": result.fallback_emitted,
             },
             indent=2,
             ensure_ascii=False,
@@ -374,26 +417,100 @@ def _attempt(
     return body, meta, result
 
 
+def _section_text(body: str, header: str, next_headers: List[str]) -> str:
+    start = body.find(header)
+    if start == -1:
+        return ""
+
+    start += len(header)
+    end_candidates = [body.find(h, start) for h in next_headers if body.find(h, start) != -1]
+    end = min(end_candidates) if end_candidates else len(body)
+    return body[start:end].strip()
+
+
+def build_zero_citation_fallback(topic: str, body: str, meta: Dict[str, Any]) -> Tuple[str, Dict[str, Any], ValidationResult]:
+    abstract = _section_text(body, "# Abstract", ["# Historical Analysis", "# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"])
+    historical = _section_text(body, "# Historical Analysis", ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"])
+    semiotic = _section_text(body, "# Semiotic Analysis", ["# 📚 BIBLIOGRAPHY"])
+
+    if not abstract:
+        abstract = (
+            f"This draft on {topic} was generated without usable source footnotes. "
+            f"It is being emitted as a provisional research stub rather than refused outright."
+        )
+
+    if not historical:
+        historical = (
+            "## Historiography & Scholarly Debate\n"
+            "Evidence was insufficiently anchored in the model output for this run.\n\n"
+            "## Material Conditions / Actors / Events\n"
+            "Claims should be treated as provisional until source-backed citations are added.\n\n"
+            "## Contradictions / Limits / Ambiguities\n"
+            "The current run produced interpretive structure without verifiable footnote support."
+        )
+
+    if not semiotic:
+        semiotic = (
+            "## Narrative Framing\n"
+            "The model produced thematic framing without usable source anchors.\n\n"
+            "## Rhetorical Mechanics\n"
+            "Any rhetorical interpretation in this draft should be treated as tentative pending sourced revision."
+        )
+
+    fallback_body = (
+        "# Abstract\n\n"
+        f"{abstract}\n\n"
+        "# Historical Analysis\n\n"
+        f"{historical}\n\n"
+        "# Semiotic Analysis\n\n"
+        f"{semiotic}\n\n"
+        "# 📚 BIBLIOGRAPHY\n"
+        "No verified bibliography entries were successfully produced in this run.\n"
+        "Re-run or manually seed sources before treating this artifact as authoritative."
+    )
+
+    meta = _meta_normalize(meta)
+    if not meta.get("title"):
+        meta["title"] = f"Research — {topic}"
+    if not meta.get("bias_analysis"):
+        meta["bias_analysis"] = "Provisional synthesis emitted under zero-citation recovery."
+    if not meta.get("grok_ctx_reflection"):
+        meta["grok_ctx_reflection"] = (
+            "This artifact passed structure recovery but did not secure usable footnote support."
+        )
+
+    result = ValidationResult(
+        ok=True,
+        error="",
+        warnings=[
+            "Zero-citation recovery engaged.",
+            "Artifact emitted as provisional draft without source-backed footnotes.",
+        ],
+        distinct_citations=0,
+        salvageable_zero_citation=True,
+        fallback_emitted=True,
+    )
+    return fallback_body, meta, result
+
+
 def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationResult]:
     attempts: List[Tuple[str, str]] = []
 
     prompt_1 = PROMPT.format(topic=topic, scaffold=HARD_SCAFFOLD)
-    body, meta, result = _attempt(syn, topic, "attempt1_primary", prompt_1)
-    attempts.append(("attempt1_primary", result.error or "; ".join(result.warnings)))
-    if result.ok:
-        return body, meta, result
-
-    print(f"⚠ Failed: {result.error}")
+    body1, meta1, result1 = _attempt(syn, topic, "attempt1_primary", prompt_1)
+    attempts.append(("attempt1_primary", result1.error or "; ".join(result1.warnings)))
+    if result1.ok:
+        return body1, meta1, result1
+    print(f"⚠ Failed: {result1.error}")
 
     prompt_2 = REBUILD_PROMPT.format(topic=topic, scaffold=HARD_SCAFFOLD)
     body2, meta2, result2 = _attempt(syn, topic, "attempt2_rebuild", prompt_2)
     attempts.append(("attempt2_rebuild", result2.error or "; ".join(result2.warnings)))
     if result2.ok:
         return body2, meta2, result2
-
     print(f"⚠ Failed: {result2.error}")
 
-    repair_seed = body2 if body2.strip() else body
+    repair_seed = body2 if body2.strip() else body1
     prompt_3 = REPAIR_PROMPT.format(
         topic=topic,
         error=result2.error,
@@ -404,12 +521,53 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
     attempts.append(("attempt3_repair", result3.error or "; ".join(result3.warnings)))
     if result3.ok:
         return body3, meta3, result3
-
     print(f"⚠ Failed: {result3.error}")
 
-    prompt_4 = REBUILD_PROMPT.format(topic=topic, scaffold=HARD_SCAFFOLD)
-    body4, meta4, result4 = _attempt(syn, topic, "attempt4_final_rebuild", prompt_4)
-    attempts.append(("attempt4_final_rebuild", result4.error or "; ".join(result4.warnings)))
+    rescue_seed = body3 if body3.strip() else repair_seed
+    prompt_4 = ZERO_CITATION_RESCUE_PROMPT.format(
+        topic=topic,
+        draft=rescue_seed,
+        scaffold=HARD_SCAFFOLD,
+    )
+    body4, meta4, result4 = _attempt(syn, topic, "attempt4_zero_citation_rescue", prompt_4)
+    attempts.append(("attempt4_zero_citation_rescue", result4.error or "; ".join(result4.warnings)))
+    if result4.ok:
+        return body4, meta4, result4
+    print(f"⚠ Failed: {result4.error}")
+
+    # Final fallback: emit a structured draft if the last output is salvageable zero-citation.
+    fallback_source_body = body4 if body4.strip() else rescue_seed
+    fallback_source_meta = meta4 if meta4 else (meta3 if meta3 else (meta2 if meta2 else meta1))
+
+    if result4.salvageable_zero_citation and _has_required_headers(fallback_source_body):
+        fallback_body, fallback_meta, fallback_result = build_zero_citation_fallback(
+            topic, fallback_source_body, fallback_source_meta
+        )
+        save_debug(topic, "attempt5_fallback_body", fallback_body)
+        save_debug(topic, "attempt5_fallback_meta", json.dumps(fallback_meta, indent=2, ensure_ascii=False))
+        save_debug(
+            topic,
+            "attempt5_fallback_validation",
+            json.dumps(
+                {
+                    "ok": fallback_result.ok,
+                    "error": fallback_result.error,
+                    "warnings": fallback_result.warnings,
+                    "distinct_citations": fallback_result.distinct_citations,
+                    "salvageable_zero_citation": fallback_result.salvageable_zero_citation,
+                    "fallback_emitted": fallback_result.fallback_emitted,
+                },
+                indent=2,
+                ensure_ascii=False,
+            ),
+        )
+        attempts.append(("attempt5_fallback_emit", "Structured zero-citation draft emitted."))
+        save_debug(
+            topic,
+            "attempt_summary",
+            "\n".join(f"{name}: {msg}" for name, msg in attempts),
+        )
+        return fallback_body, fallback_meta, fallback_result
 
     save_debug(
         topic,
@@ -417,11 +575,11 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
         "\n".join(f"{name}: {msg}" for name, msg in attempts),
     )
 
-    return body4, meta4, result4
+    return body4, fallback_source_meta, result4
 
 
 def run() -> None:
-    print("✶⌁✶ SCHOLARLY DIVE v3.3.6 [LEAN+SOFT-GATED+RECOVERY] ONLINE")
+    print("✶⌁✶ SCHOLARLY DIVE v3.3.7 [LEAN+SOFT-GATED+ZERO-RECOVERY] ONLINE")
 
     topic = input("Enter Research Topic: ").strip()
     if not topic:
@@ -430,6 +588,7 @@ def run() -> None:
 
     ensure_debug_dir()
 
+    print(f"✶ Synapse: {AGENT} identity manifested.")
     syn = Synapse()
     orch = VSEncOrchestrator({"orchestrator": OrchestratorAgent()})
 
@@ -449,7 +608,18 @@ def run() -> None:
     status = "active"
     priority = "medium"
 
-    if result.distinct_citations < TARGET_CITATIONS:
+    if result.fallback_emitted:
+        summary = (
+            f"Provisional scholarly draft emitted under zero-citation recovery for {topic}."
+        )
+        longform_summary = (
+            "Artifact emitted because structural requirements were recoverable but the model failed "
+            "to produce usable footnotes. This draft is non-authoritative and should be revised with "
+            "real sources before reliance."
+        )
+        status = "draft"
+        priority = "high"
+    elif result.distinct_citations < TARGET_CITATIONS:
         summary = (
             f"Scholarly synthesis generated with limited evidentiary support "
             f"({result.distinct_citations} distinct citation(s))."
