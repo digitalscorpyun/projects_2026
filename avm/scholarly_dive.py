@@ -1,5 +1,29 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.3.7 [LEAN+SOFT-GATED+ZERO-RECOVERY]
+# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.4.0 [LEAN+SOFT-GATED+ZERO-RECOVERY]
+# ==============================================================================
+# CHANGELOG v3.3.7 → v3.4.0:
+#   FIX-1: extract_metadata() now strips ALL ### METADATA blocks from body
+#           and parses only the LAST one. Granite 4.0 emits a partial metadata
+#           block mid-document (after Abstract), which caused extract_metadata()
+#           to split on the first occurrence and discard everything from
+#           # Historical Analysis onward. Validator then reported
+#           "Missing section: # Historical Analysis" and zero citations
+#           even when Granite produced valid content and bibliography.
+#
+#   FIX-2: _has_fake_patterns() now returns (is_fake, missing_italics).
+#           Italics check demoted from hard gate to soft warning.
+#           Granite 4.0 frequently omits markdown italics on real citations.
+#
+#   FIX-3: Removed "analysis of" from BAD_TITLE_PATTERNS — too broad,
+#           flags legitimate academic titles.
+#
+#   FIX-4: Removed broken "[^" entry from BAD_QUOTE_PATTERNS (incomplete
+#           string literal). Replaced with FOOTNOTE_IN_QUOTE_RE regex check.
+#
+#   FIX-5: OrchestratorAgent replaced with StubAgent, consistent with
+#           kimi_deux.py and scorpyun_annotator.py patterns.
+#
+#   FIX-6: DST-aware timezone via zoneinfo instead of hardcoded -8 offset.
 # ==============================================================================
 
 from __future__ import annotations
@@ -9,9 +33,14 @@ import os
 import re
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo  # type: ignore
 
 from vs_enc import VSEncOrchestrator
 from watsonx_client import WatsonXClient
@@ -27,7 +56,8 @@ DEBUG_DIR = Path("C:/Users/digitalscorpyun/projects_2026/avm/_debug/scholarly_di
 TARGET_CITATIONS = 3
 MIN_REQUIRED_CITATIONS = 1
 
-PST = timezone(timedelta(hours=-8))
+# FIX-6: DST-aware Pacific time
+LA_TZ = ZoneInfo("America/Los_Angeles")
 
 REQUIRED_HEADERS = [
     "# Abstract",
@@ -39,9 +69,16 @@ REQUIRED_HEADERS = [
 FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
 BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:\s+(.+)$", re.MULTILINE)
 
+# FIX-3: Removed "analysis of" — too broad, flags real academic titles.
 BAD_AUTHORS = {"smith, john", "doe, john", "doe, jane", "author unknown"}
-BAD_TITLE_PATTERNS = ["case study", "analysis of", "study of", "reassessment", "dark side of"]
-BAD_QUOTE_PATTERNS = ["unknown", "historian", "analysis", "source", "[^"]
+BAD_TITLE_PATTERNS = ["case study", "study of", "reassessment", "dark side of"]
+
+# FIX-4: Removed broken "[^" entry. Footnote-in-quote caught by regex below.
+BAD_QUOTE_PATTERNS = ["unknown", "historian", "analysis", "source"]
+FOOTNOTE_IN_QUOTE_RE = re.compile(r"\[\^\d+\]")
+
+# FIX-1: Regex that matches ALL ### METADATA blocks (greedy across newlines).
+_METADATA_BLOCK_RE = re.compile(r"### METADATA\s*\n(\{.*?\})", re.DOTALL)
 
 HARD_SCAFFOLD = """# Abstract
 
@@ -86,6 +123,7 @@ NON-NEGOTIABLE RULES:
 - Return a complete artifact, not notes about the artifact
 - Do not omit # Abstract
 - Do not omit ### METADATA
+- Return ONE ### METADATA block only, at the very end of the document
 
 REQUIRED SCAFFOLD:
 {scaffold}
@@ -125,7 +163,7 @@ RULES:
 - No invented citations
 - No invented quotations
 - Use quotes: [] unless you have a real direct quote with attribution
-- Keep ### METADATA and valid JSON
+- Keep ### METADATA and valid JSON — ONE block only, at the end
 - If evidence is thin, say so plainly and avoid unsupported claims
 - Do not explain what you are doing
 - Do not apologize
@@ -147,7 +185,7 @@ RULES:
   # Historical Analysis
   # Semiotic Analysis
   # 📚 BIBLIOGRAPHY
-- Preserve ### METADATA
+- Preserve ### METADATA — ONE block only, at the very end
 - Remove invented or suspicious citations
 - Fix body/bibliography alignment
 - Target at least 3 DISTINCT in-body footnotes
@@ -172,7 +210,7 @@ ABSOLUTE REQUIREMENTS:
   # Historical Analysis
   # Semiotic Analysis
   # 📚 BIBLIOGRAPHY
-- Preserve ### METADATA with valid JSON
+- Preserve ### METADATA with valid JSON — ONE block only, at the very end
 - If you have even ONE usable source, include exactly ONE matched body footnote and one bibliography line
 - If evidence is weak, say so explicitly
 - Do not invent bibliography entries
@@ -188,16 +226,22 @@ FAILED DRAFT:
 """
 
 
-def now_pst() -> datetime:
-    return datetime.now(PST)
+# ------------------------------------------------------------------------------
+# TIMEZONE HELPER
+# ------------------------------------------------------------------------------
+def now_la() -> datetime:
+    return datetime.now(LA_TZ)
 
 
+# ------------------------------------------------------------------------------
+# DEBUG HELPERS
+# ------------------------------------------------------------------------------
 def ensure_debug_dir() -> None:
     DEBUG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def debug_path(topic: str, label: str) -> Path:
-    stamp = now_pst().strftime("%Y%m%d_%H%M%S")
+    stamp = now_la().strftime("%Y%m%d_%H%M%S")
     safe_topic = re.sub(r"[^a-zA-Z0-9]+", "_", topic).strip("_")[:80] or "topic"
     return DEBUG_DIR / f"{stamp}__{safe_topic}__{label}.txt"
 
@@ -208,71 +252,41 @@ def save_debug(topic: str, label: str, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+# ------------------------------------------------------------------------------
+# FIX-1: extract_metadata — handle multiple ### METADATA blocks
+# ------------------------------------------------------------------------------
 def extract_metadata(text: str) -> Tuple[str, Dict[str, Any]]:
-    if "### METADATA" not in text:
+    """
+    Strip ALL ### METADATA blocks from the body.
+    Parse only the LAST one for metadata.
+
+    Granite 4.0 emits a partial ### METADATA block mid-document (after
+    Abstract). The original split-on-first approach discarded everything
+    from # Historical Analysis onward, causing phantom validation failures.
+    """
+    matches = list(_METADATA_BLOCK_RE.finditer(text))
+
+    if not matches:
         return text.strip(), {}
 
-    body, tail = text.split("### METADATA", 1)
-    tail = tail.strip()
-
+    # Parse the last metadata block
+    last_match = matches[-1]
     try:
-        start = tail.find("{")
-        end = tail.rfind("}") + 1
-        meta = json.loads(tail[start:end]) if start != -1 and end > 0 else {}
+        meta = json.loads(last_match.group(1))
         if not isinstance(meta, dict):
             meta = {}
     except Exception:
         meta = {}
 
-    return body.strip(), meta
+    # Strip ALL metadata blocks from the body
+    clean_body = _METADATA_BLOCK_RE.sub("", text).strip()
+
+    return clean_body, meta
 
 
-def _split(body: str) -> Tuple[str, str]:
-    return body.split("# 📚 BIBLIOGRAPHY", 1) if "# 📚 BIBLIOGRAPHY" in body else (body, "")
-
-
-def _body_refs(body: str) -> List[str]:
-    main, _ = _split(body)
-    return FOOTNOTE_REF_RE.findall(main)
-
-
-def _bib_ids(body: str) -> List[str]:
-    _, bib = _split(body)
-    return re.findall(r"\[\^(\d+)\]:", bib)
-
-
-def _bib_lines(body: str) -> List[str]:
-    _, bib = _split(body)
-    return [ln.strip() for ln in bib.splitlines() if ln.strip()]
-
-
-def _has_fake_patterns(line: str) -> bool:
-    lower = line.lower()
-    return (
-        any(a in lower for a in BAD_AUTHORS)
-        or any(p in lower for p in BAD_TITLE_PATTERNS)
-        or "*" not in line
-        or "(" not in line
-        or ")" not in line
-    )
-
-
-def _quotes_ok(meta: Dict[str, Any]) -> bool:
-    quotes = meta.get("quotes", [])
-    if quotes is None:
-        return True
-    if not isinstance(quotes, list):
-        return False
-    for q in quotes:
-        if not isinstance(q, str):
-            return False
-        if "—" not in q and " - " not in q:
-            return False
-        if any(p in q.lower() for p in BAD_QUOTE_PATTERNS):
-            return False
-    return True
-
-
+# ------------------------------------------------------------------------------
+# METADATA NORMALIZER
+# ------------------------------------------------------------------------------
 def _meta_normalize(meta: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(meta.get("quotes"), list):
         meta["quotes"] = []
@@ -292,6 +306,87 @@ def _meta_normalize(meta: Dict[str, Any]) -> Dict[str, Any]:
     return meta
 
 
+# ------------------------------------------------------------------------------
+# CITATION HELPERS
+# ------------------------------------------------------------------------------
+def _split(body: str) -> Tuple[str, str]:
+    return (
+        body.split("# 📚 BIBLIOGRAPHY", 1)
+        if "# 📚 BIBLIOGRAPHY" in body
+        else (body, "")
+    )
+
+
+def _body_refs(body: str) -> List[str]:
+    main, _ = _split(body)
+    return FOOTNOTE_REF_RE.findall(main)
+
+
+def _bib_ids(body: str) -> List[str]:
+    _, bib = _split(body)
+    return re.findall(r"\[\^(\d+)\]:", bib)
+
+
+def _bib_lines(body: str) -> List[str]:
+    _, bib = _split(body)
+    return [ln.strip() for ln in bib.splitlines() if ln.strip()]
+
+
+# ------------------------------------------------------------------------------
+# FIX-2 + FIX-3 + FIX-4: _has_fake_patterns and _quotes_ok
+# ------------------------------------------------------------------------------
+def _has_fake_patterns(line: str) -> Tuple[bool, bool]:
+    """
+    Returns (is_fake, missing_italics).
+
+    is_fake=True       → hard rejection
+    missing_italics=True → soft warning only (demoted from hard gate)
+
+    FIX-2: Italics no longer cause hard rejection.
+    FIX-3: "analysis of" removed from BAD_TITLE_PATTERNS.
+    """
+    lower = line.lower()
+
+    if any(a in lower for a in BAD_AUTHORS):
+        return True, False
+    if any(p in lower for p in BAD_TITLE_PATTERNS):
+        return True, False
+    if "(" not in line or ")" not in line:
+        return True, False
+
+    missing_italics = "*" not in line
+    return False, missing_italics
+
+
+def _quotes_ok(meta: Dict[str, Any]) -> bool:
+    """
+    FIX-4: Removed broken "[^" string from BAD_QUOTE_PATTERNS.
+            Footnote markers inside quotes now caught by FOOTNOTE_IN_QUOTE_RE.
+    """
+    quotes = meta.get("quotes", [])
+    if quotes is None:
+        return True
+    if not isinstance(quotes, list):
+        return False
+    for q in quotes:
+        if not isinstance(q, str):
+            return False
+        if "—" not in q and " - " not in q:
+            return False
+        if any(p in q.lower() for p in BAD_QUOTE_PATTERNS):
+            return False
+        if FOOTNOTE_IN_QUOTE_RE.search(q):
+            return False
+    return True
+
+
+def _has_required_headers(body: str) -> bool:
+    return all(h in body for h in REQUIRED_HEADERS)
+
+
+# ------------------------------------------------------------------------------
+# VALIDATION
+# ------------------------------------------------------------------------------
 @dataclass
 class ValidationResult:
     ok: bool
@@ -300,10 +395,6 @@ class ValidationResult:
     distinct_citations: int = 0
     salvageable_zero_citation: bool = False
     fallback_emitted: bool = False
-
-
-def _has_required_headers(body: str) -> bool:
-    return all(h in body for h in REQUIRED_HEADERS)
 
 
 def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
@@ -320,7 +411,6 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
     refs = set(_body_refs(body))
     ref_count = len(refs)
 
-    # Zero-citation outputs are now recoverable if the structure exists.
     if ref_count == 0:
         return ValidationResult(
             False,
@@ -331,7 +421,11 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         )
 
     if ref_count < MIN_REQUIRED_CITATIONS:
-        return ValidationResult(False, f"Only {ref_count} distinct citations", distinct_citations=ref_count)
+        return ValidationResult(
+            False,
+            f"Only {ref_count} distinct citations",
+            distinct_citations=ref_count,
+        )
 
     bib_ids = set(_bib_ids(body))
     if not bib_ids:
@@ -348,13 +442,21 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
     if not lines:
         return ValidationResult(False, "Empty bibliography", distinct_citations=ref_count)
 
+    warnings: List[str] = []
+
     for line in lines:
         if not BIB_LINE_RE.match(line):
-            return ValidationResult(False, "Invalid bibliography format", distinct_citations=ref_count)
-        if _has_fake_patterns(line):
-            return ValidationResult(False, f"Suspicious citation: {line}", distinct_citations=ref_count)
+            return ValidationResult(
+                False, "Invalid bibliography format", distinct_citations=ref_count
+            )
+        is_fake, missing_italics = _has_fake_patterns(line)
+        if is_fake:
+            return ValidationResult(
+                False, f"Suspicious citation: {line}", distinct_citations=ref_count
+            )
+        if missing_italics:
+            warnings.append(f"Citation missing italics (soft warning): {line[:80]}")
 
-    warnings: List[str] = []
     if ref_count < TARGET_CITATIONS:
         warnings.append(
             f"Low citation density: {ref_count} distinct citation(s); target is {TARGET_CITATIONS}."
@@ -363,6 +465,9 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
     return ValidationResult(True, "", warnings, ref_count)
 
 
+# ------------------------------------------------------------------------------
+# SYNAPSE — LLM WRAPPER
+# ------------------------------------------------------------------------------
 @dataclass
 class Synapse:
     agent: str = AGENT
@@ -376,11 +481,15 @@ class Synapse:
         return self.client.ask(prompt, max_new_tokens=2600)
 
 
-class OrchestratorAgent:
+# FIX-5: StubAgent replaces OrchestratorAgent — consistent with rest of stack.
+class StubAgent:
     def run(self, text: str) -> str:
         return text
 
 
+# ------------------------------------------------------------------------------
+# ATTEMPT RUNNER
+# ------------------------------------------------------------------------------
 def _attempt(
     syn: Synapse,
     topic: str,
@@ -417,26 +526,42 @@ def _attempt(
     return body, meta, result
 
 
+# ------------------------------------------------------------------------------
+# SECTION EXTRACTOR (for fallback)
+# ------------------------------------------------------------------------------
 def _section_text(body: str, header: str, next_headers: List[str]) -> str:
     start = body.find(header)
     if start == -1:
         return ""
-
     start += len(header)
     end_candidates = [body.find(h, start) for h in next_headers if body.find(h, start) != -1]
     end = min(end_candidates) if end_candidates else len(body)
     return body[start:end].strip()
 
 
-def build_zero_citation_fallback(topic: str, body: str, meta: Dict[str, Any]) -> Tuple[str, Dict[str, Any], ValidationResult]:
-    abstract = _section_text(body, "# Abstract", ["# Historical Analysis", "# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"])
-    historical = _section_text(body, "# Historical Analysis", ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"])
-    semiotic = _section_text(body, "# Semiotic Analysis", ["# 📚 BIBLIOGRAPHY"])
+# ------------------------------------------------------------------------------
+# ZERO-CITATION FALLBACK
+# ------------------------------------------------------------------------------
+def build_zero_citation_fallback(
+    topic: str, body: str, meta: Dict[str, Any]
+) -> Tuple[str, Dict[str, Any], ValidationResult]:
+    abstract = _section_text(
+        body, "# Abstract",
+        ["# Historical Analysis", "# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]
+    )
+    historical = _section_text(
+        body, "# Historical Analysis",
+        ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]
+    )
+    semiotic = _section_text(
+        body, "# Semiotic Analysis",
+        ["# 📚 BIBLIOGRAPHY"]
+    )
 
     if not abstract:
         abstract = (
             f"This draft on {topic} was generated without usable source footnotes. "
-            f"It is being emitted as a provisional research stub rather than refused outright."
+            "It is being emitted as a provisional research stub rather than refused outright."
         )
 
     if not historical:
@@ -454,7 +579,8 @@ def build_zero_citation_fallback(topic: str, body: str, meta: Dict[str, Any]) ->
             "## Narrative Framing\n"
             "The model produced thematic framing without usable source anchors.\n\n"
             "## Rhetorical Mechanics\n"
-            "Any rhetorical interpretation in this draft should be treated as tentative pending sourced revision."
+            "Any rhetorical interpretation in this draft should be treated as tentative "
+            "pending sourced revision."
         )
 
     fallback_body = (
@@ -493,6 +619,9 @@ def build_zero_citation_fallback(topic: str, body: str, meta: Dict[str, Any]) ->
     return fallback_body, meta, result
 
 
+# ------------------------------------------------------------------------------
+# GENERATION CASCADE
+# ------------------------------------------------------------------------------
 def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationResult]:
     attempts: List[Tuple[str, str]] = []
 
@@ -535,7 +664,7 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
         return body4, meta4, result4
     print(f"⚠ Failed: {result4.error}")
 
-    # Final fallback: emit a structured draft if the last output is salvageable zero-citation.
+    # Final fallback: emit structured draft if salvageable zero-citation.
     fallback_source_body = body4 if body4.strip() else rescue_seed
     fallback_source_meta = meta4 if meta4 else (meta3 if meta3 else (meta2 if meta2 else meta1))
 
@@ -544,7 +673,11 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
             topic, fallback_source_body, fallback_source_meta
         )
         save_debug(topic, "attempt5_fallback_body", fallback_body)
-        save_debug(topic, "attempt5_fallback_meta", json.dumps(fallback_meta, indent=2, ensure_ascii=False))
+        save_debug(
+            topic,
+            "attempt5_fallback_meta",
+            json.dumps(fallback_meta, indent=2, ensure_ascii=False),
+        )
         save_debug(
             topic,
             "attempt5_fallback_validation",
@@ -574,12 +707,14 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
         "attempt_summary",
         "\n".join(f"{name}: {msg}" for name, msg in attempts),
     )
-
     return body4, fallback_source_meta, result4
 
 
+# ------------------------------------------------------------------------------
+# ENTRY POINT
+# ------------------------------------------------------------------------------
 def run() -> None:
-    print("✶⌁✶ SCHOLARLY DIVE v3.3.7 [LEAN+SOFT-GATED+ZERO-RECOVERY] ONLINE")
+    print("✶⌁✶ SCHOLARLY DIVE v3.4.0 [LEAN+SOFT-GATED+ZERO-RECOVERY] ONLINE")
 
     topic = input("Enter Research Topic: ").strip()
     if not topic:
@@ -590,7 +725,9 @@ def run() -> None:
 
     print(f"✶ Synapse: {AGENT} identity manifested.")
     syn = Synapse()
-    orch = VSEncOrchestrator({"orchestrator": OrchestratorAgent()})
+
+    # FIX-5: StubAgent consistent with kimi_deux.py and scorpyun_annotator.py
+    orch = VSEncOrchestrator({"SCHOLARLY_STUB": StubAgent()})
 
     print(f"✶ Synthesizing: {topic}")
     body, meta, result = generate(syn, topic)
@@ -613,9 +750,9 @@ def run() -> None:
             f"Provisional scholarly draft emitted under zero-citation recovery for {topic}."
         )
         longform_summary = (
-            "Artifact emitted because structural requirements were recoverable but the model failed "
-            "to produce usable footnotes. This draft is non-authoritative and should be revised with "
-            "real sources before reliance."
+            "Artifact emitted because structural requirements were recoverable but the model "
+            "failed to produce usable footnotes. This draft is non-authoritative and should be "
+            "revised with real sources before reliance."
         )
         status = "draft"
         priority = "high"
@@ -633,7 +770,7 @@ def run() -> None:
         priority = "medium"
 
     payload = orch.run(
-        agent_name="orchestrator",
+        agent_name="SCHOLARLY_STUB",
         input_text=body,
         invocation_type="scholarly_dive",
         custom_params={
@@ -649,11 +786,11 @@ def run() -> None:
             "key_themes": meta.get("key_themes", []),
             "bias_analysis": meta.get(
                 "bias_analysis",
-                "Grounded scholarly synthesis with explicit handling of evidentiary limits."
+                "Grounded scholarly synthesis with explicit handling of evidentiary limits.",
             ),
             "grok_ctx_reflection": meta.get(
                 "grok_ctx_reflection",
-                "Research artifact generated through scholarly_dive."
+                "Research artifact generated through scholarly_dive.",
             ),
             "quotes": meta.get("quotes", []),
             "adinkra": meta.get("adinkra", []),
