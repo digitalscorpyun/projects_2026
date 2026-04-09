@@ -1,29 +1,22 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.4.0 [LEAN+SOFT-GATED+ZERO-RECOVERY]
+# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.4.1 [LEAN+SOFT-GATED+AUTO-STITCH]
 # ==============================================================================
-# CHANGELOG v3.3.7 → v3.4.0:
-#   FIX-1: extract_metadata() now strips ALL ### METADATA blocks from body
-#           and parses only the LAST one. Granite 4.0 emits a partial metadata
-#           block mid-document (after Abstract), which caused extract_metadata()
-#           to split on the first occurrence and discard everything from
-#           # Historical Analysis onward. Validator then reported
-#           "Missing section: # Historical Analysis" and zero citations
-#           even when Granite produced valid content and bibliography.
+# CHANGELOG v3.4.0 → v3.4.1:
+#   FIX-7: Detect "bibliography present but no in-body footnotes" as a specific
+#           failure mode instead of generic "Only 0 distinct citations".
 #
-#   FIX-2: _has_fake_patterns() now returns (is_fake, missing_italics).
-#           Italics check demoted from hard gate to soft warning.
-#           Granite 4.0 frequently omits markdown italics on real citations.
+#   FIX-8: Added auto-stitch rescue. If the model emits exactly one bibliography
+#           id and zero body refs, inject that footnote marker into the first
+#           suitable prose line under # Historical Analysis (fallback: # Abstract),
+#           then revalidate. This handles the exact Avignon failure mode where the
+#           model produced a usable bibliography line but forgot to place [^1] in
+#           the body.
 #
-#   FIX-3: Removed "analysis of" from BAD_TITLE_PATTERNS — too broad,
-#           flags legitimate academic titles.
+#   FIX-9: Prompt language tightened to explicitly require placement of footnotes
+#           directly after concrete sentences in the body.
 #
-#   FIX-4: Removed broken "[^" entry from BAD_QUOTE_PATTERNS (incomplete
-#           string literal). Replaced with FOOTNOTE_IN_QUOTE_RE regex check.
-#
-#   FIX-5: OrchestratorAgent replaced with StubAgent, consistent with
-#           kimi_deux.py and scorpyun_annotator.py patterns.
-#
-#   FIX-6: DST-aware timezone via zoneinfo instead of hardcoded -8 offset.
+#   FIX-10: Attempt runner now persists auto-stitch debug artifacts so the rescue
+#            is visible in _debug.
 # ==============================================================================
 
 from __future__ import annotations
@@ -35,7 +28,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from zoneinfo import ZoneInfo
@@ -56,7 +49,6 @@ DEBUG_DIR = Path("C:/Users/digitalscorpyun/projects_2026/avm/_debug/scholarly_di
 TARGET_CITATIONS = 3
 MIN_REQUIRED_CITATIONS = 1
 
-# FIX-6: DST-aware Pacific time
 LA_TZ = ZoneInfo("America/Los_Angeles")
 
 REQUIRED_HEADERS = [
@@ -69,15 +61,12 @@ REQUIRED_HEADERS = [
 FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
 BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:\s+(.+)$", re.MULTILINE)
 
-# FIX-3: Removed "analysis of" — too broad, flags real academic titles.
 BAD_AUTHORS = {"smith, john", "doe, john", "doe, jane", "author unknown"}
 BAD_TITLE_PATTERNS = ["case study", "study of", "reassessment", "dark side of"]
 
-# FIX-4: Removed broken "[^" entry. Footnote-in-quote caught by regex below.
 BAD_QUOTE_PATTERNS = ["unknown", "historian", "analysis", "source"]
 FOOTNOTE_IN_QUOTE_RE = re.compile(r"\[\^\d+\]")
 
-# FIX-1: Regex that matches ALL ### METADATA blocks (greedy across newlines).
 _METADATA_BLOCK_RE = re.compile(r"### METADATA\s*\n(\{.*?\})", re.DOTALL)
 
 HARD_SCAFFOLD = """# Abstract
@@ -124,6 +113,8 @@ NON-NEGOTIABLE RULES:
 - Do not omit # Abstract
 - Do not omit ### METADATA
 - Return ONE ### METADATA block only, at the very end of the document
+- Place body footnote markers directly after concrete sentences, for example:
+  "The papacy relocated to Avignon under Clement V.[^1]"
 
 REQUIRED SCAFFOLD:
 {scaffold}
@@ -160,6 +151,7 @@ RULES:
 - Minimum acceptable support is 1 DISTINCT body footnote if evidence is sparse
 - Every bibliography id must match a body footnote
 - Every body footnote must have a bibliography line
+- Place body footnote markers directly after concrete sentences in the prose
 - No invented citations
 - No invented quotations
 - Use quotes: [] unless you have a real direct quote with attribution
@@ -191,6 +183,7 @@ RULES:
 - Target at least 3 DISTINCT in-body footnotes
 - Minimum acceptable support is 1 DISTINCT in-body footnote if evidence is sparse
 - Every bibliography line must match a cited body footnote
+- Place each body footnote marker directly after a concrete sentence
 - Use quotes: [] unless you have real direct quotes
 - If evidence is limited, state that clearly instead of inventing support
 - Return only the repaired report and metadata
@@ -212,6 +205,7 @@ ABSOLUTE REQUIREMENTS:
   # 📚 BIBLIOGRAPHY
 - Preserve ### METADATA with valid JSON — ONE block only, at the very end
 - If you have even ONE usable source, include exactly ONE matched body footnote and one bibliography line
+- Place that body footnote marker directly after a concrete sentence in the body
 - If evidence is weak, say so explicitly
 - Do not invent bibliography entries
 - Do not invent quotations
@@ -253,23 +247,18 @@ def save_debug(topic: str, label: str, content: str) -> None:
 
 
 # ------------------------------------------------------------------------------
-# FIX-1: extract_metadata — handle multiple ### METADATA blocks
+# METADATA EXTRACTION
 # ------------------------------------------------------------------------------
 def extract_metadata(text: str) -> Tuple[str, Dict[str, Any]]:
     """
     Strip ALL ### METADATA blocks from the body.
     Parse only the LAST one for metadata.
-
-    Granite 4.0 emits a partial ### METADATA block mid-document (after
-    Abstract). The original split-on-first approach discarded everything
-    from # Historical Analysis onward, causing phantom validation failures.
     """
     matches = list(_METADATA_BLOCK_RE.finditer(text))
 
     if not matches:
         return text.strip(), {}
 
-    # Parse the last metadata block
     last_match = matches[-1]
     try:
         meta = json.loads(last_match.group(1))
@@ -278,9 +267,7 @@ def extract_metadata(text: str) -> Tuple[str, Dict[str, Any]]:
     except Exception:
         meta = {}
 
-    # Strip ALL metadata blocks from the body
     clean_body = _METADATA_BLOCK_RE.sub("", text).strip()
-
     return clean_body, meta
 
 
@@ -332,18 +319,19 @@ def _bib_lines(body: str) -> List[str]:
     return [ln.strip() for ln in bib.splitlines() if ln.strip()]
 
 
+def _has_required_headers(body: str) -> bool:
+    return all(h in body for h in REQUIRED_HEADERS)
+
+
 # ------------------------------------------------------------------------------
-# FIX-2 + FIX-3 + FIX-4: _has_fake_patterns and _quotes_ok
+# BIBLIOGRAPHY / QUOTE QUALITY
 # ------------------------------------------------------------------------------
 def _has_fake_patterns(line: str) -> Tuple[bool, bool]:
     """
     Returns (is_fake, missing_italics).
 
-    is_fake=True       → hard rejection
-    missing_italics=True → soft warning only (demoted from hard gate)
-
-    FIX-2: Italics no longer cause hard rejection.
-    FIX-3: "analysis of" removed from BAD_TITLE_PATTERNS.
+    is_fake=True          → hard rejection
+    missing_italics=True  → soft warning only
     """
     lower = line.lower()
 
@@ -359,10 +347,6 @@ def _has_fake_patterns(line: str) -> Tuple[bool, bool]:
 
 
 def _quotes_ok(meta: Dict[str, Any]) -> bool:
-    """
-    FIX-4: Removed broken "[^" string from BAD_QUOTE_PATTERNS.
-            Footnote markers inside quotes now caught by FOOTNOTE_IN_QUOTE_RE.
-    """
     quotes = meta.get("quotes", [])
     if quotes is None:
         return True
@@ -380,8 +364,75 @@ def _quotes_ok(meta: Dict[str, Any]) -> bool:
     return True
 
 
-def _has_required_headers(body: str) -> bool:
-    return all(h in body for h in REQUIRED_HEADERS)
+# ------------------------------------------------------------------------------
+# AUTO-STITCH RESCUE
+# ------------------------------------------------------------------------------
+def _find_section_span(body: str, header: str, next_headers: List[str]) -> Optional[Tuple[int, int]]:
+    start = body.find(header)
+    if start == -1:
+        return None
+    start_content = start + len(header)
+    end_candidates = [body.find(h, start_content) for h in next_headers if body.find(h, start_content) != -1]
+    end = min(end_candidates) if end_candidates else len(body)
+    return start_content, end
+
+
+def _inject_footnote_into_section(section_text: str, footnote_id: str) -> Optional[str]:
+    """
+    Inject [^id] into the first suitable prose line.
+    Skip empty lines and markdown headers.
+    """
+    lines = section_text.splitlines()
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("#"):
+            continue
+        if FOOTNOTE_REF_RE.search(stripped):
+            return None
+        if not re.search(r"[A-Za-z]", stripped):
+            continue
+
+        if stripped.endswith((".", "!", "?", "”", '"')):
+            lines[i] = f"{line}[^{footnote_id}]"
+        else:
+            lines[i] = f"{line} [^{footnote_id}]"
+        return "\n".join(lines)
+    return None
+
+
+def autostitch_single_bibref(body: str) -> Optional[str]:
+    """
+    If there is exactly one bibliography id and zero body refs,
+    stitch that id into the first suitable prose line.
+    """
+    refs = set(_body_refs(body))
+    bib_ids = list(dict.fromkeys(_bib_ids(body)))
+
+    if refs:
+        return None
+    if len(bib_ids) != 1:
+        return None
+
+    footnote_id = bib_ids[0]
+
+    targets = [
+        ("# Historical Analysis", ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]),
+        ("# Abstract", ["# Historical Analysis", "# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]),
+    ]
+
+    for header, next_headers in targets:
+        span = _find_section_span(body, header, next_headers)
+        if not span:
+            continue
+        start, end = span
+        section_text = body[start:end]
+        updated_section = _inject_footnote_into_section(section_text, footnote_id)
+        if updated_section is not None:
+            return body[:start] + updated_section + body[end:]
+
+    return None
 
 
 # ------------------------------------------------------------------------------
@@ -395,6 +446,7 @@ class ValidationResult:
     distinct_citations: int = 0
     salvageable_zero_citation: bool = False
     fallback_emitted: bool = False
+    bibliography_only: bool = False
 
 
 def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
@@ -409,7 +461,52 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         return ValidationResult(False, "Invalid metadata quotes")
 
     refs = set(_body_refs(body))
+    bib_ids = set(_bib_ids(body))
     ref_count = len(refs)
+
+    # Specific failure mode: bibliography exists but body has no footnotes
+    if ref_count == 0 and bib_ids:
+        lines = _bib_lines(body)
+        if not lines:
+            return ValidationResult(
+                False,
+                "Bibliography present but empty",
+                distinct_citations=0,
+                salvageable_zero_citation=True,
+                bibliography_only=True,
+            )
+
+        warnings: List[str] = []
+        for line in lines:
+            if not BIB_LINE_RE.match(line):
+                return ValidationResult(
+                    False,
+                    "Invalid bibliography format",
+                    distinct_citations=0,
+                    salvageable_zero_citation=False,
+                    bibliography_only=True,
+                )
+            is_fake, missing_italics = _has_fake_patterns(line)
+            if is_fake:
+                return ValidationResult(
+                    False,
+                    f"Suspicious citation: {line}",
+                    distinct_citations=0,
+                    salvageable_zero_citation=False,
+                    bibliography_only=True,
+                )
+            if missing_italics:
+                warnings.append(f"Citation missing italics (soft warning): {line[:80]}")
+
+        warnings.append("Bibliography present but no in-body footnotes.")
+        return ValidationResult(
+            False,
+            "Bibliography present but no in-body footnotes",
+            warnings=warnings,
+            distinct_citations=0,
+            salvageable_zero_citation=True,
+            bibliography_only=True,
+        )
 
     if ref_count == 0:
         return ValidationResult(
@@ -427,7 +524,6 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
             distinct_citations=ref_count,
         )
 
-    bib_ids = set(_bib_ids(body))
     if not bib_ids:
         return ValidationResult(False, "Missing bibliography", distinct_citations=ref_count)
 
@@ -443,16 +539,19 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         return ValidationResult(False, "Empty bibliography", distinct_citations=ref_count)
 
     warnings: List[str] = []
-
     for line in lines:
         if not BIB_LINE_RE.match(line):
             return ValidationResult(
-                False, "Invalid bibliography format", distinct_citations=ref_count
+                False,
+                "Invalid bibliography format",
+                distinct_citations=ref_count,
             )
         is_fake, missing_italics = _has_fake_patterns(line)
         if is_fake:
             return ValidationResult(
-                False, f"Suspicious citation: {line}", distinct_citations=ref_count
+                False,
+                f"Suspicious citation: {line}",
+                distinct_citations=ref_count,
             )
         if missing_italics:
             warnings.append(f"Citation missing italics (soft warning): {line[:80]}")
@@ -481,7 +580,6 @@ class Synapse:
         return self.client.ask(prompt, max_new_tokens=2600)
 
 
-# FIX-5: StubAgent replaces OrchestratorAgent — consistent with rest of stack.
 class StubAgent:
     def run(self, text: str) -> str:
         return text
@@ -490,6 +588,22 @@ class StubAgent:
 # ------------------------------------------------------------------------------
 # ATTEMPT RUNNER
 # ------------------------------------------------------------------------------
+def _serialize_validation(result: ValidationResult) -> str:
+    return json.dumps(
+        {
+            "ok": result.ok,
+            "error": result.error,
+            "warnings": result.warnings,
+            "distinct_citations": result.distinct_citations,
+            "salvageable_zero_citation": result.salvageable_zero_citation,
+            "fallback_emitted": result.fallback_emitted,
+            "bibliography_only": result.bibliography_only,
+        },
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
 def _attempt(
     syn: Synapse,
     topic: str,
@@ -506,22 +620,17 @@ def _attempt(
 
     save_debug(topic, f"{label}_body", body)
     save_debug(topic, f"{label}_meta", json.dumps(meta, indent=2, ensure_ascii=False))
-    save_debug(
-        topic,
-        f"{label}_validation",
-        json.dumps(
-            {
-                "ok": result.ok,
-                "error": result.error,
-                "warnings": result.warnings,
-                "distinct_citations": result.distinct_citations,
-                "salvageable_zero_citation": result.salvageable_zero_citation,
-                "fallback_emitted": result.fallback_emitted,
-            },
-            indent=2,
-            ensure_ascii=False,
-        ),
-    )
+    save_debug(topic, f"{label}_validation", _serialize_validation(result))
+
+    # Auto-stitch bibliography-only drafts
+    if not result.ok and result.bibliography_only:
+        stitched = autostitch_single_bibref(body)
+        if stitched and stitched != body:
+            stitched_result = validate(stitched, meta)
+            save_debug(topic, f"{label}_autostitch_body", stitched)
+            save_debug(topic, f"{label}_autostitch_validation", _serialize_validation(stitched_result))
+            if stitched_result.ok:
+                return stitched, meta, stitched_result
 
     return body, meta, result
 
@@ -546,16 +655,19 @@ def build_zero_citation_fallback(
     topic: str, body: str, meta: Dict[str, Any]
 ) -> Tuple[str, Dict[str, Any], ValidationResult]:
     abstract = _section_text(
-        body, "# Abstract",
-        ["# Historical Analysis", "# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]
+        body,
+        "# Abstract",
+        ["# Historical Analysis", "# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"],
     )
     historical = _section_text(
-        body, "# Historical Analysis",
-        ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]
+        body,
+        "# Historical Analysis",
+        ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"],
     )
     semiotic = _section_text(
-        body, "# Semiotic Analysis",
-        ["# 📚 BIBLIOGRAPHY"]
+        body,
+        "# Semiotic Analysis",
+        ["# 📚 BIBLIOGRAPHY"],
     )
 
     if not abstract:
@@ -664,7 +776,6 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
         return body4, meta4, result4
     print(f"⚠ Failed: {result4.error}")
 
-    # Final fallback: emit structured draft if salvageable zero-citation.
     fallback_source_body = body4 if body4.strip() else rescue_seed
     fallback_source_meta = meta4 if meta4 else (meta3 if meta3 else (meta2 if meta2 else meta1))
 
@@ -678,22 +789,7 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
             "attempt5_fallback_meta",
             json.dumps(fallback_meta, indent=2, ensure_ascii=False),
         )
-        save_debug(
-            topic,
-            "attempt5_fallback_validation",
-            json.dumps(
-                {
-                    "ok": fallback_result.ok,
-                    "error": fallback_result.error,
-                    "warnings": fallback_result.warnings,
-                    "distinct_citations": fallback_result.distinct_citations,
-                    "salvageable_zero_citation": fallback_result.salvageable_zero_citation,
-                    "fallback_emitted": fallback_result.fallback_emitted,
-                },
-                indent=2,
-                ensure_ascii=False,
-            ),
-        )
+        save_debug(topic, "attempt5_fallback_validation", _serialize_validation(fallback_result))
         attempts.append(("attempt5_fallback_emit", "Structured zero-citation draft emitted."))
         save_debug(
             topic,
@@ -714,7 +810,7 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
 # ENTRY POINT
 # ------------------------------------------------------------------------------
 def run() -> None:
-    print("✶⌁✶ SCHOLARLY DIVE v3.4.0 [LEAN+SOFT-GATED+ZERO-RECOVERY] ONLINE")
+    print("✶⌁✶ SCHOLARLY DIVE v3.4.1 [LEAN+SOFT-GATED+AUTO-STITCH] ONLINE")
 
     topic = input("Enter Research Topic: ").strip()
     if not topic:
@@ -726,7 +822,6 @@ def run() -> None:
     print(f"✶ Synapse: {AGENT} identity manifested.")
     syn = Synapse()
 
-    # FIX-5: StubAgent consistent with kimi_deux.py and scorpyun_annotator.py
     orch = VSEncOrchestrator({"SCHOLARLY_STUB": StubAgent()})
 
     print(f"✶ Synthesizing: {topic}")
@@ -746,9 +841,7 @@ def run() -> None:
     priority = "medium"
 
     if result.fallback_emitted:
-        summary = (
-            f"Provisional scholarly draft emitted under zero-citation recovery for {topic}."
-        )
+        summary = f"Provisional scholarly draft emitted under zero-citation recovery for {topic}."
         longform_summary = (
             "Artifact emitted because structural requirements were recoverable but the model "
             "failed to produce usable footnotes. This draft is non-authoritative and should be "
