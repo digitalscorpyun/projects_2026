@@ -1,19 +1,18 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.5.2 [LEAN+SOFT-GATED+EVIDENCE-HARDENED]
+# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.5.3 [LEAN+SOFT-GATED+CITATION-RESTORE]
 # ==============================================================================
-# CHANGELOG v3.5.1 → v3.5.2:
-#   FIX-23: Metadata extraction now hard-strips orphan "### METADATA" tails even
-#           when the JSON is malformed, preventing bibliography contamination.
-#   FIX-24: Bibliography sanitizer now returns removed footnote ids and the body
-#           cleanup phase degrades or rewrites unsupported scholarship claims.
-#   FIX-25: Added single-source deintensifier: if only one primary/legal source
-#           survives, broad secondary-scholarship claims are softened.
-#   FIX-26: Warning stream is deduplicated.
-#   FIX-27: Body/bibliography cleanup now runs in a stable order:
-#           extract → repair structure → sanitize bib → clean body claims →
-#           auto-stitch → validate.
-#   FIX-28: Final fallback preserves content but injects clearer provisionality
-#           notes when citation density is thin.
+# CHANGELOG v3.5.2 → v3.5.3:
+#   FIX-29: Added explicit citation-restoration pass before provisional fallback.
+#   FIX-30: Sanitization now repairs first and prunes last; body refs are not
+#           stripped until bibliography salvage is attempted.
+#   FIX-31: Legal / case citations are no longer treated as suspicious merely
+#           for lacking italics.
+#   FIX-32: Fallback path no longer emits fake "scholarly" artifacts too early;
+#           it prefers restored inline footnotes + bibliography whenever possible.
+#   FIX-33: Metadata extraction hard-strips malformed metadata tails.
+#   FIX-34: Warning stream deduplicated and stabilized.
+#   FIX-35: Body claim cleanup deintensifies unsupported scholarship claims after
+#           bibliography pruning instead of letting them survive as unsupported.
 # ==============================================================================
 
 from __future__ import annotations
@@ -120,6 +119,8 @@ CITATION FORMAT:
   [^1]: Author. *Title* (Publisher, Year).
   OR
   [^1]: Institution. *Title* (Year).
+  OR
+  [^1]: Case Name, Reporter (Year).
 - No bullets in bibliography
 - No extra commentary in bibliography
 
@@ -214,6 +215,26 @@ FAILED DRAFT:
 {draft}
 """
 
+CITATION_RESTORE_PROMPT = """\
+The draft below contains historical prose but is missing usable inline footnotes and/or bibliography.
+
+Rewrite ONLY to restore valid source anchoring.
+
+RULES:
+- Preserve the existing prose as much as possible
+- Add inline footnotes directly after concrete factual claims
+- Add matching bibliography lines under # 📚 BIBLIOGRAPHY
+- Use only citations you can support
+- If a claim cannot be supported, remove or soften that claim
+- Do not output placeholder bibliography text
+- Preserve all required top-level headers
+- Preserve ### METADATA at the end
+- Return only the repaired report and metadata
+
+DRAFT:
+{draft}
+"""
+
 
 # ------------------------------------------------------------------------------
 # TIME / DEBUG
@@ -249,12 +270,12 @@ def _dedupe_warnings(warnings: List[str]) -> List[str]:
     seen = set()
     out: List[str] = []
     for w in warnings:
-        norm = w.strip()
-        if not norm:
+        s = w.strip()
+        if not s:
             continue
-        if norm not in seen:
-            seen.add(norm)
-            out.append(norm)
+        if s not in seen:
+            seen.add(s)
+            out.append(s)
     return out
 
 
@@ -299,12 +320,12 @@ def _section_text(body: str, header: str, next_headers: List[str]) -> str:
     return body[start:end].strip()
 
 
-def _first_nonempty_prose(section_text: str) -> str:
-    for line in section_text.splitlines():
-        s = line.strip()
-        if s and not s.startswith("#"):
-            return s
-    return ""
+def _count_concrete_claim_signals(text: str) -> int:
+    signals = 0
+    signals += len(re.findall(r"\b(18|19|20)\d{2}\b", text))
+    signals += len(re.findall(r"\b[A-Z][a-z]+ v\. [A-Z][A-Za-z]+\b", text))
+    signals += len(re.findall(r"\b[A-Z][a-z]+ [A-Z][a-z]+\b", text))
+    return signals
 
 
 # ------------------------------------------------------------------------------
@@ -355,7 +376,7 @@ def _repair_metadata_json(raw: str) -> Dict[str, Any]:
 
 def extract_metadata(text: str) -> Tuple[str, Dict[str, Any], List[str]]:
     """
-    Hard-strip the final ### METADATA tail even when the JSON is broken.
+    Hard-strip final metadata tail even if malformed, so it cannot contaminate bibliography.
     """
     warnings: List[str] = []
     marker = "\n### METADATA"
@@ -371,9 +392,9 @@ def extract_metadata(text: str) -> Tuple[str, Dict[str, Any], List[str]]:
     body = text[:idx].strip()
     meta_tail = text[idx + len(marker):].strip()
 
-    json_candidate = ""
     brace_start = meta_tail.find("{")
     brace_end = meta_tail.rfind("}")
+    json_candidate = ""
     if brace_start != -1 and brace_end != -1 and brace_end > brace_start:
         json_candidate = meta_tail[brace_start:brace_end + 1]
 
@@ -431,7 +452,26 @@ def _meta_normalize(meta: Dict[str, Any], topic: str = "") -> Dict[str, Any]:
 # ------------------------------------------------------------------------------
 # BIBLIOGRAPHY QUALITY / SANITIZE
 # ------------------------------------------------------------------------------
+def _looks_like_legal_or_institutional_citation(line: str) -> bool:
+    low = line.lower()
+    return (
+        " v. " in low
+        or "u.s." in low
+        or "supreme court" in low
+        or "court" in low
+        or "illinois" in low
+        or "department" in low
+        or "commission" in low
+        or "congress" in low
+        or "library of congress" in low
+    )
+
+
 def _has_fake_patterns(line: str) -> Tuple[bool, bool]:
+    """
+    Returns (is_fake, missing_italics)
+    Legal / institutional citations may omit italics without being suspicious.
+    """
     lower = line.lower()
 
     if any(a in lower for a in BAD_AUTHORS):
@@ -441,12 +481,16 @@ def _has_fake_patterns(line: str) -> Tuple[bool, bool]:
     if "(" not in line or ")" not in line:
         return True, False
 
+    if _looks_like_legal_or_institutional_citation(line):
+        return False, False
+
     missing_italics = "*" not in line
     return False, missing_italics
 
 
 def sanitize_bibliography(body: str) -> Tuple[str, List[str], List[str], List[str], Dict[str, str]]:
     """
+    Repair first, prune last.
     Returns:
       sanitized_body,
       warnings,
@@ -461,6 +505,7 @@ def sanitize_bibliography(body: str) -> Tuple[str, List[str], List[str], List[st
 
     main, bib = body.split("# 📚 BIBLIOGRAPHY", 1)
     bib_lines_raw = [ln.rstrip() for ln in bib.splitlines()]
+
     kept_lines: List[str] = []
     kept_ids: List[str] = []
     removed_ids: List[str] = []
@@ -491,15 +536,8 @@ def sanitize_bibliography(body: str) -> Tuple[str, List[str], List[str], List[st
         kept_ids.append(note_id)
         bib_map[note_id] = stripped
 
-    kept_id_set = set(kept_ids)
-
-    def _drop_unmatched_ref(match: re.Match[str]) -> str:
-        ref_id = match.group(1)
-        return match.group(0) if ref_id in kept_id_set else ""
-
-    sanitized_main = FOOTNOTE_REF_RE.sub(_drop_unmatched_ref, main)
-
-    rebuilt = sanitized_main.rstrip() + "\n\n# 📚 BIBLIOGRAPHY\n"
+    rebuilt = _clean_whitespace(main)
+    rebuilt += "\n\n# 📚 BIBLIOGRAPHY\n"
     if kept_lines:
         rebuilt += "\n".join(kept_lines)
 
@@ -518,8 +556,7 @@ _SCHOLARLY_CLAIM_PATTERNS = [
 
 
 def _is_primary_legal_citation(line: str) -> bool:
-    low = line.lower()
-    return " v. " in low or "u.s." in low or "state," in low or "court" in low
+    return _looks_like_legal_or_institutional_citation(line)
 
 
 def clean_unsupported_body_claims(
@@ -529,17 +566,11 @@ def clean_unsupported_body_claims(
     bib_map: Dict[str, str],
 ) -> Tuple[str, List[str]]:
     warnings: List[str] = []
-
-    if not kept_ids and not removed_ids:
+    if "# 📚 BIBLIOGRAPHY" not in body:
         return body, warnings
 
-    main, bib = _split(body)
-    surviving_primary_only = False
-    if len(kept_ids) == 1:
-        surviving_line = bib_map.get(kept_ids[0], "")
-        surviving_primary_only = _is_primary_legal_citation(surviving_line)
+    main, bib = body.split("# 📚 BIBLIOGRAPHY", 1)
 
-    # Remove explicit dead refs that somehow remain
     if removed_ids:
         dead_ref_pat = re.compile(r"\[\^(?:%s)\]" % "|".join(re.escape(x) for x in removed_ids))
         main2 = dead_ref_pat.sub("", main)
@@ -547,37 +578,40 @@ def clean_unsupported_body_claims(
             warnings.append("Removed dangling footnote markers for pruned bibliography ids.")
             main = main2
 
-    # If only one legal case source survived, deintensify unsupported named-scholar claims.
+    surviving_primary_only = False
+    if len(kept_ids) == 1:
+        surviving_line = bib_map.get(kept_ids[0], "")
+        surviving_primary_only = _is_primary_legal_citation(surviving_line)
+
     if surviving_primary_only:
         original = main
 
         replacements = [
             (
                 re.compile(
-                    r"Scholars such as .*? have provided nuanced analyses of .*?\[\^\d+\]",
+                    r"Scholars such as .*? have provided nuanced analyses of .*?\.",
                     re.IGNORECASE | re.DOTALL,
                 ),
-                "Later scholarship has interpreted Bradwell's case in multiple ways, but this run retained only the primary case source as a verified citation.[^%s]" % kept_ids[0],
+                "Later interpretations exist, but this run retained only the primary legal source as a verified citation.",
             ),
             (
                 re.compile(
                     r"More recent scholarship, however, has sought to contextualize .*? standards of professionalization\.",
                     re.IGNORECASE | re.DOTALL,
                 ),
-                "Later interpretations have situated Bradwell's case within broader debates over women's rights and professionalization, but this run retained only a primary legal source for verification.",
+                "Later interpretations have situated the case within broader debates, but this run retained only a primary legal source for direct verification.",
             ),
         ]
 
         for pat, repl in replacements:
             main = pat.sub(repl, main)
 
-        # Strip unsupported author-year parentheticals if they survived.
+        main = re.sub(r"\b[A-Z][a-z]+ [A-Z]\. [A-Z][a-z]+ \(\d{4}\)", "later commentators", main)
         main = re.sub(r"\b[A-Z][a-z]+ [A-Z][a-z]+ \(\d{4}\)", "later commentators", main)
 
-        # Generic downgrade pass on scholar-heavy lines
         for pat in _SCHOLARLY_CLAIM_PATTERNS:
             main = pat.sub(
-                "Later interpretations exist, but this run retained only the primary case source as a verified citation.[^%s]" % kept_ids[0],
+                "Later interpretations exist, but this run retained only the primary legal source as a verified citation.",
                 main,
             )
 
@@ -585,7 +619,7 @@ def clean_unsupported_body_claims(
             warnings.append("Deintensified unsupported secondary-scholarship claims after bibliography pruning.")
 
     rebuilt = _clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip()
-    return rebuilt, warnings
+    return _clean_whitespace(rebuilt), warnings
 
 
 # ------------------------------------------------------------------------------
@@ -673,8 +707,34 @@ def repair_required_structure(topic: str, body: str) -> Tuple[str, List[str]]:
 
 
 # ------------------------------------------------------------------------------
-# AUTO-STITCH
+# ALIGNMENT / AUTO-STITCH / PRUNE-LAST
 # ------------------------------------------------------------------------------
+def align_body_and_bibliography(body: str, kept_ids: List[str]) -> Tuple[str, List[str]]:
+    """
+    Only after salvage do we prune orphan refs.
+    """
+    warnings: List[str] = []
+
+    if "# 📚 BIBLIOGRAPHY" not in body:
+        return body, warnings
+
+    main, bib = body.split("# 📚 BIBLIOGRAPHY", 1)
+    kept = set(kept_ids)
+
+    if kept:
+        main2 = re.sub(
+            r"\[\^(\d+)\]",
+            lambda m: m.group(0) if m.group(1) in kept else "",
+            main,
+        )
+        if main2 != main:
+            warnings.append("Removed orphan body footnotes after bibliography salvage.")
+            main = main2
+
+    rebuilt = _clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip()
+    return _clean_whitespace(rebuilt), warnings
+
+
 def _inject_footnote_into_section(section_text: str, footnote_id: str) -> Optional[str]:
     lines = section_text.splitlines()
     for i, line in enumerate(lines):
@@ -714,9 +774,9 @@ def autostitch_first_surviving_bibref(body: str) -> Optional[str]:
             continue
         start, end = span
         section_text = body[start:end]
-        updated_section = _inject_footnote_into_section(section_text, footnote_id)
-        if updated_section is not None:
-            return body[:start] + updated_section + body[end:]
+        updated = _inject_footnote_into_section(section_text, footnote_id)
+        if updated is not None:
+            return body[:start] + updated + body[end:]
 
     return None
 
@@ -766,7 +826,7 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         return ValidationResult(
             False,
             "Bibliography present but no in-body footnotes",
-            warnings=warnings,
+            warnings=_dedupe_warnings(warnings),
             distinct_citations=0,
             salvageable_zero_citation=True,
             bibliography_only=True,
@@ -774,11 +834,11 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         )
 
     if ref_count == 0:
-        warnings.append("Zero-citation draft is structurally present but not source-anchored.")
+        warnings.append("Only 0 distinct citations")
         return ValidationResult(
             False,
             "Only 0 distinct citations",
-            warnings=warnings,
+            warnings=_dedupe_warnings(warnings),
             distinct_citations=0,
             salvageable_zero_citation=True,
             force_emit_safe=True,
@@ -788,7 +848,7 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         return ValidationResult(
             False,
             f"Only {ref_count} distinct citations",
-            warnings=warnings,
+            warnings=_dedupe_warnings(warnings),
             distinct_citations=ref_count,
             force_emit_safe=True,
         )
@@ -797,7 +857,7 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         return ValidationResult(
             False,
             "Missing bibliography",
-            warnings=warnings,
+            warnings=_dedupe_warnings(warnings),
             distinct_citations=ref_count,
             salvageable_zero_citation=True,
             force_emit_safe=True,
@@ -808,7 +868,7 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         return ValidationResult(
             False,
             "Citation mismatch between body and bibliography",
-            warnings=warnings,
+            warnings=_dedupe_warnings(warnings),
             distinct_citations=ref_count,
             salvageable_zero_citation=True,
             force_emit_safe=True,
@@ -819,7 +879,7 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
         return ValidationResult(
             False,
             "Empty bibliography",
-            warnings=warnings,
+            warnings=_dedupe_warnings(warnings),
             distinct_citations=ref_count,
             salvageable_zero_citation=True,
             force_emit_safe=True,
@@ -865,6 +925,37 @@ class StubAgent:
 
 
 # ------------------------------------------------------------------------------
+# PIPELINE PASS
+# ------------------------------------------------------------------------------
+def run_cleanup_pipeline(topic: str, body: str, meta: Dict[str, Any]) -> Tuple[str, Dict[str, Any], List[str]]:
+    """
+    Stable order:
+      extract -> repair structure -> sanitize bib -> clean claims -> align -> autostitch
+    """
+    warnings: List[str] = []
+    meta = _meta_normalize(meta, topic=topic)
+
+    body, structure_warnings = repair_required_structure(topic, body)
+    warnings.extend(structure_warnings)
+
+    body, bib_warnings, kept_ids, removed_ids, bib_map = sanitize_bibliography(body)
+    warnings.extend(bib_warnings)
+
+    body, claim_warnings = clean_unsupported_body_claims(body, kept_ids, removed_ids, bib_map)
+    warnings.extend(claim_warnings)
+
+    body, align_warnings = align_body_and_bibliography(body, kept_ids)
+    warnings.extend(align_warnings)
+
+    stitched = autostitch_first_surviving_bibref(body)
+    if stitched:
+        body = _clean_whitespace(stitched)
+        warnings.append("Auto-stitched first surviving bibliography id into body.")
+
+    return body, meta, _dedupe_warnings(warnings)
+
+
+# ------------------------------------------------------------------------------
 # ATTEMPT RUNNER
 # ------------------------------------------------------------------------------
 def _serialize_validation(result: ValidationResult) -> str:
@@ -895,26 +986,27 @@ def _attempt(
     save_debug(topic, f"{label}_raw", raw)
 
     body, meta, meta_warnings = extract_metadata(raw)
-    meta = _meta_normalize(meta, topic=topic)
-
-    body, structure_warnings = repair_required_structure(topic, body)
-    body, bib_warnings, kept_ids, removed_ids, bib_map = sanitize_bibliography(body)
-    body, claim_warnings = clean_unsupported_body_claims(body, kept_ids, removed_ids, bib_map)
-
-    stitched = autostitch_first_surviving_bibref(body)
-    if stitched:
-        body = _clean_whitespace(stitched)
+    body, meta, pipeline_warnings = run_cleanup_pipeline(topic, body, meta)
 
     result = validate(body, meta)
-    result.warnings = _dedupe_warnings(
-        meta_warnings + structure_warnings + bib_warnings + claim_warnings + result.warnings
-    )
+    result.warnings = _dedupe_warnings(meta_warnings + pipeline_warnings + result.warnings)
 
     save_debug(topic, f"{label}_body", body)
     save_debug(topic, f"{label}_meta", json.dumps(meta, indent=2, ensure_ascii=False))
     save_debug(topic, f"{label}_validation", _serialize_validation(result))
-
     return body, meta, result
+
+
+def _should_attempt_citation_restore(body: str, result: ValidationResult) -> bool:
+    body_ref_count = len(set(_body_refs(body)))
+    bib_id_count = len(set(_bib_ids(body)))
+    concrete_claims = _count_concrete_claim_signals(body)
+
+    return (
+        not result.ok
+        and concrete_claims > 3
+        and (body_ref_count == 0 or bib_id_count == 0)
+    )
 
 
 # ------------------------------------------------------------------------------
@@ -929,13 +1021,7 @@ def build_content_preserving_fallback(
 ) -> Tuple[str, Dict[str, Any], ValidationResult]:
     prior_warnings = prior_warnings or []
 
-    body, structure_warnings = repair_required_structure(topic, body)
-    body, bib_warnings, kept_ids, removed_ids, bib_map = sanitize_bibliography(body)
-    body, claim_warnings = clean_unsupported_body_claims(body, kept_ids, removed_ids, bib_map)
-
-    stitched = autostitch_first_surviving_bibref(body)
-    if stitched:
-        body = _clean_whitespace(stitched)
+    body, meta, pipeline_warnings = run_cleanup_pipeline(topic, body, meta)
 
     main, bib = _split(body)
     if not bib.strip():
@@ -959,21 +1045,9 @@ def build_content_preserving_fallback(
     if recovery_note not in abstract:
         abstract = _clean_whitespace(abstract + "\n\n" + recovery_note)
 
-    historical = _section_text(
-        body,
-        "# Historical Analysis",
-        ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"],
-    ).strip()
-    semiotic = _section_text(
-        body,
-        "# Semiotic Analysis",
-        ["# 📚 BIBLIOGRAPHY"],
-    ).strip()
-    bibliography = _section_text(
-        body,
-        "# 📚 BIBLIOGRAPHY",
-        [],
-    ).strip()
+    historical = _section_text(body, "# Historical Analysis", ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]).strip()
+    semiotic = _section_text(body, "# Semiotic Analysis", ["# 📚 BIBLIOGRAPHY"]).strip()
+    bibliography = _section_text(body, "# 📚 BIBLIOGRAPHY", []).strip()
 
     rebuilt = (
         "# Abstract\n\n"
@@ -997,9 +1071,7 @@ def build_content_preserving_fallback(
 
     warnings = _dedupe_warnings(
         prior_warnings
-        + structure_warnings
-        + bib_warnings
-        + claim_warnings
+        + pipeline_warnings
         + [f"Content-preserving fallback engaged after: {prior_error}"]
     )
 
@@ -1063,18 +1135,39 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
         return body4, meta4, result4
     print(f"⚠ Failed: {result4.error}")
 
-    candidates = [
+    # New: citation restoration before fallback
+    restore_seed_candidates = [
         (body1, meta1, result1),
         (body2, meta2, result2),
         (body3, meta3, result3),
         (body4, meta4, result4),
     ]
+    best_restore_body, _, best_restore_result = max(
+        restore_seed_candidates,
+        key=lambda x: (
+            len(x[0].strip()),
+            _count_concrete_claim_signals(x[0]),
+            len(set(_body_refs(x[0]))),
+        ),
+    )
+
+    if _should_attempt_citation_restore(best_restore_body, best_restore_result):
+        restore_prompt = CITATION_RESTORE_PROMPT.format(draft=best_restore_body)
+        body5, meta5, result5 = _attempt(syn, topic, "attempt5_restore_citations", restore_prompt)
+        attempts.append(("attempt5_restore_citations", result5.error or "; ".join(result5.warnings)))
+        if result5.ok and len(set(_body_refs(body5))) > 0 and len(set(_bib_ids(body5))) > 0:
+            return body5, meta5, result5
+        print(f"⚠ Failed: {result5.error}")
+
+        restore_seed_candidates.append((body5, meta5, result5))
+
     best_body, best_meta, best_result = max(
-        candidates,
+        restore_seed_candidates,
         key=lambda x: (
             len(x[0].strip()),
             len(set(_body_refs(x[0]))),
-            len(_bib_ids(x[0])),
+            len(set(_bib_ids(x[0]))),
+            _count_concrete_claim_signals(x[0]),
         ),
     )
 
@@ -1086,21 +1179,20 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
         prior_warnings=best_result.warnings,
     )
 
-    save_debug(topic, "attempt5_content_preserving_fallback_body", fallback_body)
+    save_debug(topic, "attempt6_content_preserving_fallback_body", fallback_body)
     save_debug(
         topic,
-        "attempt5_content_preserving_fallback_meta",
+        "attempt6_content_preserving_fallback_meta",
         json.dumps(fallback_meta, indent=2, ensure_ascii=False),
     )
     save_debug(
         topic,
-        "attempt5_content_preserving_fallback_validation",
+        "attempt6_content_preserving_fallback_validation",
         _serialize_validation(fallback_result),
     )
 
-    attempts.append(("attempt5_content_preserving_fallback", "Recovered best available content and emitted provisionally."))
+    attempts.append(("attempt6_content_preserving_fallback", "Recovered best available content and emitted provisionally."))
     save_debug(topic, "attempt_summary", "\n".join(f"{name}: {msg}" for name, msg in attempts))
-
     return fallback_body, fallback_meta, fallback_result
 
 
@@ -1108,7 +1200,7 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
 # ENTRY POINT
 # ------------------------------------------------------------------------------
 def run() -> None:
-    print("✶⌁✶ SCHOLARLY DIVE v3.5.2 [LEAN+SOFT-GATED+EVIDENCE-HARDENED] ONLINE")
+    print("✶⌁✶ SCHOLARLY DIVE v3.5.3 [LEAN+SOFT-GATED+CITATION-RESTORE] ONLINE")
 
     topic = input("Enter Research Topic: ").strip()
     if not topic:
@@ -1144,11 +1236,11 @@ def run() -> None:
     priority = "medium"
 
     if result.fallback_emitted:
-        summary = f"Provisional scholarly draft emitted under evidence-hardened recovery for {topic}."
+        summary = f"Provisional scholarly draft emitted under citation-restoration recovery for {topic}."
         longform_summary = (
             "Artifact emitted because the engine was configured to preserve recoverable analysis "
-            "without allowing unsupported scholarship claims to survive cleanup. This draft remains "
-            "provisional and should be manually source-reviewed before authoritative use."
+            "and attempt citation restoration before fallback. This draft remains provisional and "
+            "should be manually source-reviewed before authoritative use."
         )
         status = "draft"
         priority = "high"
