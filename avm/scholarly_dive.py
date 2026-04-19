@@ -1,18 +1,9 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — SYNTHESIS ENGINE v3.5.3 [LEAN+SOFT-GATED+CITATION-RESTORE]
+# ✶⌁✶ scholarly_dive.py — THE SCHOLARLY SYNTHESIS ENGINE v3.6.0 [HARDENED]
 # ==============================================================================
-# CHANGELOG v3.5.2 → v3.5.3:
-#   FIX-29: Added explicit citation-restoration pass before provisional fallback.
-#   FIX-30: Sanitization now repairs first and prunes last; body refs are not
-#           stripped until bibliography salvage is attempted.
-#   FIX-31: Legal / case citations are no longer treated as suspicious merely
-#           for lacking italics.
-#   FIX-32: Fallback path no longer emits fake "scholarly" artifacts too early;
-#           it prefers restored inline footnotes + bibliography whenever possible.
-#   FIX-33: Metadata extraction hard-strips malformed metadata tails.
-#   FIX-34: Warning stream deduplicated and stabilized.
-#   FIX-35: Body claim cleanup deintensifies unsupported scholarship claims after
-#           bibliography pruning instead of letting them survive as unsupported.
+# ROLE: Lean synthesis client with fail-fast validation, citation integrity,
+#       metadata enforcement, and vault-safe emission discipline.
+# COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
 # ==============================================================================
 
 from __future__ import annotations
@@ -24,16 +15,20 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 try:
     from zoneinfo import ZoneInfo
-except ImportError:
+except ImportError:  # pragma: no cover
     from backports.zoneinfo import ZoneInfo  # type: ignore
 
 from vs_enc import VSEncOrchestrator
 from watsonx_client import WatsonXClient
 
+
+# ------------------------------------------------------------------------------
+# ENV / IDENTITY
+# ------------------------------------------------------------------------------
 if not os.getenv("WATSONX_PROJECT_ID"):
     print("❌ ERROR: WATSONX_PROJECT_ID missing.")
     sys.exit(1)
@@ -41,11 +36,13 @@ if not os.getenv("WATSONX_PROJECT_ID"):
 AGENT = os.getenv("SCHOLARLY_DIVE_AGENT", "QWEN-ECHO")
 ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
 DEBUG_DIR = Path("C:/Users/digitalscorpyun/projects_2026/avm/_debug/scholarly_dive")
+LA_TZ = ZoneInfo("America/Los_Angeles")
+
+VERSION = "v3.6.0"
+BANNER = f"✶⌁✶ SCHOLARLY DIVE {VERSION} [HARDENED] ONLINE"
 
 TARGET_CITATIONS = 3
 MIN_REQUIRED_CITATIONS = 1
-
-LA_TZ = ZoneInfo("America/Los_Angeles")
 
 REQUIRED_HEADERS = [
     "# Abstract",
@@ -54,14 +51,20 @@ REQUIRED_HEADERS = [
     "# 📚 BIBLIOGRAPHY",
 ]
 
+CRITICAL_META_KEYS = [
+    "title",
+    "tags",
+    "key_themes",
+    "bias_analysis",
+    "grok_ctx_reflection",
+    "quotes",
+    "adinkra",
+]
+
 FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
 BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:\s+(.+)$", re.MULTILINE)
-BIB_LINE_SINGLE_RE = re.compile(r"^\[\^(\d+)\]:\s+(.+)$")
-
-BAD_AUTHORS = {"smith, john", "doe, john", "doe, jane", "author unknown"}
-BAD_TITLE_PATTERNS = ["case study", "study of", "reassessment", "dark side of"]
-BAD_QUOTE_PATTERNS = ["unknown", "historian", "analysis", "source"]
-FOOTNOTE_IN_QUOTE_RE = re.compile(r"\[\^\d+\]")
+QUOTED_TEXT_RE = re.compile(r'[“"]([^"\n]{12,220})[”"]\s*[—-]\s*([^\n]+)')
+TRAILING_METADATA_RE = re.compile(r"\n### METADATA\s*$", re.MULTILINE)
 
 HARD_SCAFFOLD = """# Abstract
 
@@ -90,45 +93,48 @@ HARD_SCAFFOLD = """# Abstract
 """
 
 PROMPT = """\
-Produce a rigorous scholarly synthesis on: {topic}
+Produce a rigorous AlgorithmicGriot research synthesis on: {topic}
 
 NON-NEGOTIABLE RULES:
 - No fluff
 - No invented citations
 - No invented quotations
+- No placeholder metadata
+- Use the exact top-level headers shown below
+- Return a complete artifact only
 - Target at least 3 DISTINCT in-body footnotes tied to concrete claims
 - Minimum acceptable support is 1 DISTINCT in-body footnote if evidence is sparse
 - Every body footnote must appear in bibliography
-- Every bibliography entry must be cited in the body
-- If support is weak, explicitly say evidence is limited
-- If you cannot support a claim, omit it
-- Use the exact top-level headers shown below
-- Return a complete artifact, not notes about the artifact
-- Do not omit # Abstract
-- Do not omit ### METADATA
-- Return ONE ### METADATA block only, at the very end of the document
-- Place body footnote markers directly after concrete sentences, for example:
-  "The papacy relocated to Avignon under Clement V.[^1]"
+- Every bibliography line must correspond to a cited body footnote
+- If evidence is weak, state that clearly instead of bluffing
+- If you cannot support a claim, omit or soften it
+- Maintain a disciplined AlgorithmicGriot voice: high-precision, historically alert, rhetorically controlled
+- Do not append notes after metadata
+- Return ONE metadata block only, at the end
+
+BODY FOOTNOTE FORMAT:
+- Place markers directly after factual sentences: example.[^1]
+
+BIBLIOGRAPHY FORMAT:
+- One line per entry only
+- Example:
+  [^1]: Author, *Title* (Publisher, Year).
+  [^2]: Institution, *Title* (Year).
+  [^3]: Case Name, Reporter (Year).
+
+METADATA RULES:
+- title: non-empty string
+- tags: non-empty JSON list of strings
+- key_themes: non-empty JSON list of strings
+- bias_analysis: non-empty string
+- grok_ctx_reflection: non-empty string
+- quotes: non-empty JSON list of REAL direct quotes with attribution in the same string
+- adinkra: non-empty JSON list of strings
+- quotes MUST use this shape:
+  ["\\"Quoted text\\" — Name"]
 
 REQUIRED SCAFFOLD:
 {scaffold}
-
-CITATION FORMAT:
-- Body: [^1]
-- Bibliography lines only, one per line:
-  [^1]: Author. *Title* (Publisher, Year).
-  OR
-  [^1]: Institution. *Title* (Year).
-  OR
-  [^1]: Case Name, Reporter (Year).
-- No bullets in bibliography
-- No extra commentary in bibliography
-
-METADATA RULES:
-- quotes must be a JSON list of strings
-- use [] unless you have a REAL direct quote with attribution
-- do not include paraphrases as quotes
-- adinkra must be a JSON list of strings
 
 Return only the report and metadata.
 """
@@ -141,20 +147,19 @@ Rewrite from scratch on: {topic}
 YOU MUST RETURN THIS EXACT TOP-LEVEL SHAPE:
 {scaffold}
 
-RULES:
-- Use those exact top-level headers
-- Target at least 3 DISTINCT body footnotes
-- Minimum acceptable support is 1 DISTINCT body footnote if evidence is sparse
-- Every bibliography id must match a body footnote
-- Every body footnote must have a bibliography line
-- Place body footnote markers directly after concrete sentences in the prose
+HARD RULES:
+- Preserve the exact required top-level headers
+- Produce a vault-safe AlgorithmicGriot synthesis
 - No invented citations
 - No invented quotations
-- Use quotes: [] unless you have a real direct quote with attribution
-- Keep ### METADATA and valid JSON — ONE block only, at the end
-- If evidence is thin, say so plainly and avoid unsupported claims
-- Do not explain what you are doing
-- Do not apologize
+- No placeholder metadata
+- Target at least 3 DISTINCT body footnotes
+- Minimum acceptable support is 1 DISTINCT body footnote if evidence is sparse
+- Every body footnote must match a bibliography line
+- Every bibliography line must match a body footnote
+- quotes metadata must be non-empty and contain real direct quote(s) with attribution
+- Every critical metadata field must be non-empty
+- If support is thin, say so plainly and narrow the claims
 - Return only the rewritten report and metadata
 """
 
@@ -167,68 +172,34 @@ VALIDATION ERROR: {error}
 REQUIRED SCAFFOLD:
 {scaffold}
 
-RULES:
-- Preserve exact top-level headers:
-  # Abstract
-  # Historical Analysis
-  # Semiotic Analysis
-  # 📚 BIBLIOGRAPHY
-- Preserve ### METADATA — ONE block only, at the very end
+HARD RULES:
+- Preserve exact top-level headers
+- Preserve one metadata block at the end
 - Remove invented or suspicious citations
 - Fix body/bibliography alignment
-- Target at least 3 DISTINCT in-body footnotes
-- Minimum acceptable support is 1 DISTINCT in-body footnote if evidence is sparse
-- Every bibliography line must match a cited body footnote
-- Place each body footnote marker directly after a concrete sentence
-- Use quotes: [] unless you have real direct quotes
-- If evidence is limited, state that clearly instead of inventing support
+- Restore non-empty critical metadata fields
+- quotes metadata must be non-empty and contain real direct quote(s) with attribution
+- If a claim cannot be supported, soften or remove it
 - Return only the repaired report and metadata
 
 DRAFT:
 {draft}
 """
 
-ZERO_CITATION_RESCUE_PROMPT = """\
-Your last response kept failing because it contained ZERO in-body footnotes.
+QUOTE_REPAIR_PROMPT = """\
+The draft below is missing valid quote metadata.
 
-Rewrite on: {topic}
-
-ABSOLUTE REQUIREMENTS:
-- Preserve this exact top-level structure:
-  # Abstract
-  # Historical Analysis
-  # Semiotic Analysis
-  # 📚 BIBLIOGRAPHY
-- Preserve ### METADATA with valid JSON — ONE block only, at the very end
-- If you have even ONE usable source, include exactly ONE matched body footnote and one bibliography line
-- Place that body footnote marker directly after a concrete sentence in the body
-- If evidence is weak, say so explicitly
-- Do not invent bibliography entries
-- Do not invent quotations
-- If you cannot support a claim, omit it
-- Return only the rewritten report and metadata
-
-SCAFFOLD:
-{scaffold}
-
-FAILED DRAFT:
-{draft}
-"""
-
-CITATION_RESTORE_PROMPT = """\
-The draft below contains historical prose but is missing usable inline footnotes and/or bibliography.
-
-Rewrite ONLY to restore valid source anchoring.
+Repair ONLY the metadata and any body language needed to support it.
 
 RULES:
-- Preserve the existing prose as much as possible
-- Add inline footnotes directly after concrete factual claims
-- Add matching bibliography lines under # 📚 BIBLIOGRAPHY
-- Use only citations you can support
-- If a claim cannot be supported, remove or soften that claim
-- Do not output placeholder bibliography text
-- Preserve all required top-level headers
-- Preserve ### METADATA at the end
+- Preserve the existing body whenever possible
+- Keep exact top-level headers
+- Keep one metadata block at the end
+- quotes must be a non-empty JSON list
+- Every quote must be a REAL direct quote with attribution in one string:
+  "\\"Quoted text\\" — Name"
+- Do not invent quotations
+- If no quote is safely available, rewrite the draft so that one real quoted sentence is included and sourced
 - Return only the repaired report and metadata
 
 DRAFT:
@@ -255,92 +226,73 @@ def debug_path(topic: str, label: str) -> Path:
 
 def save_debug(topic: str, label: str, content: str) -> None:
     path = debug_path(topic, label)
-    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
 
 
 # ------------------------------------------------------------------------------
 # GENERAL HELPERS
 # ------------------------------------------------------------------------------
-def _clean_whitespace(text: str) -> str:
+def clean_whitespace(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
-def _dedupe_warnings(warnings: List[str]) -> List[str]:
+def dedupe(items: List[str]) -> List[str]:
     seen = set()
     out: List[str] = []
-    for w in warnings:
-        s = w.strip()
-        if not s:
-            continue
-        if s not in seen:
-            seen.add(s)
-            out.append(s)
+    for item in items:
+        val = item.strip()
+        if val and val not in seen:
+            seen.add(val)
+            out.append(val)
     return out
 
 
-def _split(body: str) -> Tuple[str, str]:
-    return body.split("# 📚 BIBLIOGRAPHY", 1) if "# 📚 BIBLIOGRAPHY" in body else (body, "")
+def slug_terms(topic: str) -> List[str]:
+    words = [w.lower() for w in re.findall(r"[A-Za-z0-9]+", topic)]
+    return dedupe(words[:5]) or ["research"]
 
 
-def _body_refs(body: str) -> List[str]:
-    main, _ = _split(body)
+def split_body_bib(body: str) -> Tuple[str, str]:
+    if "# 📚 BIBLIOGRAPHY" not in body:
+        return body, ""
+    main, bib = body.split("# 📚 BIBLIOGRAPHY", 1)
+    return main, bib
+
+
+def body_refs(body: str) -> List[str]:
+    main, _ = split_body_bib(body)
     return FOOTNOTE_REF_RE.findall(main)
 
 
-def _bib_ids(body: str) -> List[str]:
-    _, bib = _split(body)
+def bib_ids(body: str) -> List[str]:
+    _, bib = split_body_bib(body)
     return re.findall(r"\[\^(\d+)\]:", bib)
 
 
-def _bib_lines(body: str) -> List[str]:
-    _, bib = _split(body)
+def bib_lines(body: str) -> List[str]:
+    _, bib = split_body_bib(body)
     return [ln.strip() for ln in bib.splitlines() if ln.strip()]
 
 
-def _has_required_headers(body: str) -> bool:
-    return all(h in body for h in REQUIRED_HEADERS)
+def has_required_headers(body: str) -> bool:
+    return all(header in body for header in REQUIRED_HEADERS)
 
 
-def _find_section_span(body: str, header: str, next_headers: List[str]) -> Optional[Tuple[int, int]]:
-    start = body.find(header)
-    if start == -1:
-        return None
-    start_content = start + len(header)
-    end_candidates = [body.find(h, start_content) for h in next_headers if body.find(h, start_content) != -1]
-    end = min(end_candidates) if end_candidates else len(body)
-    return start_content, end
-
-
-def _section_text(body: str, header: str, next_headers: List[str]) -> str:
-    span = _find_section_span(body, header, next_headers)
-    if not span:
-        return ""
-    start, end = span
-    return body[start:end].strip()
-
-
-def _count_concrete_claim_signals(text: str) -> int:
-    signals = 0
-    signals += len(re.findall(r"\b(18|19|20)\d{2}\b", text))
-    signals += len(re.findall(r"\b[A-Z][a-z]+ v\. [A-Z][A-Za-z]+\b", text))
-    signals += len(re.findall(r"\b[A-Z][a-z]+ [A-Z][a-z]+\b", text))
-    return signals
+def count_concrete_signals(text: str) -> int:
+    return (
+        len(re.findall(r"\b(1[5-9]\d{2}|20\d{2})\b", text))
+        + len(re.findall(r"\b[A-Z][a-z]+ [A-Z][a-z]+\b", text))
+        + len(re.findall(r"\b[A-Z][a-z]+ v\. [A-Z][A-Za-z]+\b", text))
+    )
 
 
 # ------------------------------------------------------------------------------
-# METADATA EXTRACTION / REPAIR
+# METADATA EXTRACTION / NORMALIZATION
 # ------------------------------------------------------------------------------
-def _repair_metadata_json(raw: str) -> Dict[str, Any]:
+def repair_json(raw: str) -> Dict[str, Any]:
     raw = raw.strip()
     if not raw:
         return {}
-
-    try:
-        parsed = json.loads(raw)
-        return parsed if isinstance(parsed, dict) else {}
-    except Exception:
-        pass
 
     repaired = (
         raw.replace("“", '"')
@@ -348,24 +300,7 @@ def _repair_metadata_json(raw: str) -> Dict[str, Any]:
         .replace("’", "'")
         .replace("‘", "'")
     )
-
     repaired = re.sub(r",(\s*[\]}])", r"\1", repaired)
-
-    repaired = re.sub(
-        r'("quotes"\s*:\s*)"([^"\n]*)"',
-        lambda m: f'{m.group(1)}[{json.dumps(m.group(2))}]',
-        repaired,
-    )
-    repaired = re.sub(
-        r'("adinkra"\s*:\s*)"([^"\n]*)"',
-        lambda m: f'{m.group(1)}[{json.dumps(m.group(2))}]',
-        repaired,
-    )
-    repaired = re.sub(
-        r'("(?:tags|key_themes)"\s*:\s*)"([^"\n]*)"',
-        lambda m: f'{m.group(1)}[{json.dumps(m.group(2))}]',
-        repaired,
-    )
 
     try:
         parsed = json.loads(repaired)
@@ -375,432 +310,203 @@ def _repair_metadata_json(raw: str) -> Dict[str, Any]:
 
 
 def extract_metadata(text: str) -> Tuple[str, Dict[str, Any], List[str]]:
-    """
-    Hard-strip final metadata tail even if malformed, so it cannot contaminate bibliography.
-    """
     warnings: List[str] = []
-    marker = "\n### METADATA"
+    marker = "### METADATA"
     idx = text.rfind(marker)
-
-    if idx == -1:
-        marker = "### METADATA"
-        idx = text.rfind(marker)
-
     if idx == -1:
         return text.strip(), {}, warnings
 
     body = text[:idx].strip()
-    meta_tail = text[idx + len(marker):].strip()
+    tail = text[idx + len(marker):].strip()
 
-    brace_start = meta_tail.find("{")
-    brace_end = meta_tail.rfind("}")
-    json_candidate = ""
-    if brace_start != -1 and brace_end != -1 and brace_end > brace_start:
-        json_candidate = meta_tail[brace_start:brace_end + 1]
+    start = tail.find("{")
+    end = tail.rfind("}")
+    candidate = tail[start:end + 1] if start != -1 and end != -1 and end > start else ""
+    meta = repair_json(candidate)
 
-    meta = _repair_metadata_json(json_candidate) if json_candidate else {}
     if not meta:
-        warnings.append("Metadata JSON was malformed or empty; normalized to defaults.")
+        warnings.append("Metadata JSON malformed or missing; normalization applied.")
 
     return body, meta, warnings
 
 
-def _meta_normalize(meta: Dict[str, Any], topic: str = "") -> Dict[str, Any]:
-    if not isinstance(meta, dict):
-        meta = {}
+def infer_quote_from_body(body: str) -> List[str]:
+    hits = QUOTED_TEXT_RE.findall(body)
+    cleaned: List[str] = []
+    for quote, author in hits:
+        q = quote.strip()
+        a = author.strip().strip(".")
+        if len(q) >= 12 and a:
+            cleaned.append(f"\"{q}\" — {a}")
+    return dedupe(cleaned[:2])
 
-    if not isinstance(meta.get("title"), str) or not meta.get("title", "").strip():
-        meta["title"] = topic.strip() if topic.strip() else "Research"
 
-    for key in ("tags", "key_themes", "adinkra"):
-        value = meta.get(key, [])
-        if isinstance(value, list):
-            cleaned = [str(v).strip() for v in value if str(v).strip()]
-        elif isinstance(value, str) and value.strip():
-            cleaned = [value.strip()]
-        else:
-            cleaned = []
-        meta[key] = cleaned
+def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any]:
+    meta = meta if isinstance(meta, dict) else {}
+    terms = slug_terms(topic)
 
-    for key in ("bias_analysis", "grok_ctx_reflection"):
-        if not isinstance(meta.get(key), str):
-            meta[key] = ""
-
+    title = str(meta.get("title", "")).strip() or topic.strip() or "Research"
+    tags = meta.get("tags", [])
+    key_themes = meta.get("key_themes", [])
+    adinkra = meta.get("adinkra", [])
     quotes = meta.get("quotes", [])
-    if isinstance(quotes, str):
-        quotes = [quotes] if quotes.strip() else []
-    if not isinstance(quotes, list):
-        quotes = []
 
-    cleaned_quotes: List[str] = []
+    if not isinstance(tags, list):
+        tags = [str(tags).strip()] if str(tags).strip() else []
+    if not isinstance(key_themes, list):
+        key_themes = [str(key_themes).strip()] if str(key_themes).strip() else []
+    if not isinstance(adinkra, list):
+        adinkra = [str(adinkra).strip()] if str(adinkra).strip() else []
+    if not isinstance(quotes, list):
+        quotes = [str(quotes).strip()] if str(quotes).strip() else []
+
+    tags = dedupe([str(x).strip() for x in tags if str(x).strip()]) or terms[:3]
+    key_themes = dedupe([str(x).strip() for x in key_themes if str(x).strip()]) or terms[:3]
+    adinkra = dedupe([str(x).strip() for x in adinkra if str(x).strip()]) or ["Sankofa"]
+
+    clean_quotes = []
     for q in quotes:
         if not isinstance(q, str):
             continue
-        q = FOOTNOTE_IN_QUOTE_RE.sub("", q).strip()
-        if not q:
-            continue
-        if any(p in q.lower() for p in BAD_QUOTE_PATTERNS):
-            continue
-        if "—" not in q and " - " not in q:
-            continue
-        cleaned_quotes.append(q)
+        s = q.strip()
+        if s and "—" in s:
+            clean_quotes.append(s)
 
-    meta["quotes"] = cleaned_quotes
-    return meta
+    if not clean_quotes:
+        clean_quotes = infer_quote_from_body(body)
+
+    bias_analysis = str(meta.get("bias_analysis", "")).strip()
+    if not bias_analysis:
+        bias_analysis = (
+            "Synthesis foregrounds evidentiary limits, historiographic tension, and power-laden framing "
+            "instead of treating consensus claims as neutral."
+        )
+
+    grok_ctx_reflection = str(meta.get("grok_ctx_reflection", "")).strip()
+    if not grok_ctx_reflection:
+        grok_ctx_reflection = (
+            "Artifact built for retrieval stability, contradiction visibility, and source-linked analytical reuse."
+        )
+
+    return {
+        "title": title,
+        "tags": tags,
+        "key_themes": key_themes,
+        "bias_analysis": bias_analysis,
+        "grok_ctx_reflection": grok_ctx_reflection,
+        "quotes": dedupe(clean_quotes),
+        "adinkra": adinkra,
+    }
 
 
 # ------------------------------------------------------------------------------
-# BIBLIOGRAPHY QUALITY / SANITIZE
+# STRUCTURE / BIBLIOGRAPHY REPAIR
 # ------------------------------------------------------------------------------
-def _looks_like_legal_or_institutional_citation(line: str) -> bool:
-    low = line.lower()
-    return (
-        " v. " in low
-        or "u.s." in low
-        or "supreme court" in low
-        or "court" in low
-        or "illinois" in low
-        or "department" in low
-        or "commission" in low
-        or "congress" in low
-        or "library of congress" in low
-    )
-
-
-def _has_fake_patterns(line: str) -> Tuple[bool, bool]:
-    """
-    Returns (is_fake, missing_italics)
-    Legal / institutional citations may omit italics without being suspicious.
-    """
-    lower = line.lower()
-
-    if any(a in lower for a in BAD_AUTHORS):
-        return True, False
-    if any(p in lower for p in BAD_TITLE_PATTERNS):
-        return True, False
-    if "(" not in line or ")" not in line:
-        return True, False
-
-    if _looks_like_legal_or_institutional_citation(line):
-        return False, False
-
-    missing_italics = "*" not in line
-    return False, missing_italics
-
-
-def sanitize_bibliography(body: str) -> Tuple[str, List[str], List[str], List[str], Dict[str, str]]:
-    """
-    Repair first, prune last.
-    Returns:
-      sanitized_body,
-      warnings,
-      kept_ids,
-      removed_ids,
-      bib_map
-    """
+def repair_structure(topic: str, body: str) -> Tuple[str, List[str]]:
     warnings: List[str] = []
+    if has_required_headers(body):
+        return clean_whitespace(body), warnings
 
-    if "# 📚 BIBLIOGRAPHY" not in body:
-        return body, warnings, [], [], {}
+    sections = {
+        "# Abstract": "",
+        "# Historical Analysis": "",
+        "# Semiotic Analysis": "",
+        "# 📚 BIBLIOGRAPHY": "",
+    }
 
-    main, bib = body.split("# 📚 BIBLIOGRAPHY", 1)
-    bib_lines_raw = [ln.rstrip() for ln in bib.splitlines()]
-
-    kept_lines: List[str] = []
-    kept_ids: List[str] = []
-    removed_ids: List[str] = []
-    bib_map: Dict[str, str] = {}
-
-    for line in bib_lines_raw:
+    current = None
+    for line in body.splitlines():
         stripped = line.strip()
-        if not stripped:
+        if stripped in sections:
+            current = stripped
             continue
+        if current:
+            sections[current] += line + "\n"
 
-        m = BIB_LINE_SINGLE_RE.match(stripped)
-        if not m:
-            warnings.append(f"Removed invalid bibliography line: {stripped[:120]}")
-            continue
-
-        note_id = m.group(1)
-        is_fake, missing_italics = _has_fake_patterns(stripped)
-
-        if is_fake:
-            removed_ids.append(note_id)
-            warnings.append(f"Removed suspicious citation: {stripped[:120]}")
-            continue
-
-        if missing_italics:
-            warnings.append(f"Citation missing italics (soft warning): {stripped[:120]}")
-
-        kept_lines.append(stripped)
-        kept_ids.append(note_id)
-        bib_map[note_id] = stripped
-
-    rebuilt = _clean_whitespace(main)
-    rebuilt += "\n\n# 📚 BIBLIOGRAPHY\n"
-    if kept_lines:
-        rebuilt += "\n".join(kept_lines)
-
-    return _clean_whitespace(rebuilt), warnings, kept_ids, removed_ids, bib_map
-
-
-# ------------------------------------------------------------------------------
-# BODY CLAIM CLEANUP
-# ------------------------------------------------------------------------------
-_SCHOLARLY_CLAIM_PATTERNS = [
-    re.compile(r"Scholars such as .*?\[\^\d+\]", re.IGNORECASE),
-    re.compile(r"More recent scholarship, however, has .*?\[\^\d+\]", re.IGNORECASE),
-    re.compile(r"Recent scholarship .*?\[\^\d+\]", re.IGNORECASE),
-    re.compile(r"Historians .*?\[\^\d+\]", re.IGNORECASE),
-]
-
-
-def _is_primary_legal_citation(line: str) -> bool:
-    return _looks_like_legal_or_institutional_citation(line)
-
-
-def clean_unsupported_body_claims(
-    body: str,
-    kept_ids: List[str],
-    removed_ids: List[str],
-    bib_map: Dict[str, str],
-) -> Tuple[str, List[str]]:
-    warnings: List[str] = []
-    if "# 📚 BIBLIOGRAPHY" not in body:
-        return body, warnings
-
-    main, bib = body.split("# 📚 BIBLIOGRAPHY", 1)
-
-    if removed_ids:
-        dead_ref_pat = re.compile(r"\[\^(?:%s)\]" % "|".join(re.escape(x) for x in removed_ids))
-        main2 = dead_ref_pat.sub("", main)
-        if main2 != main:
-            warnings.append("Removed dangling footnote markers for pruned bibliography ids.")
-            main = main2
-
-    surviving_primary_only = False
-    if len(kept_ids) == 1:
-        surviving_line = bib_map.get(kept_ids[0], "")
-        surviving_primary_only = _is_primary_legal_citation(surviving_line)
-
-    if surviving_primary_only:
-        original = main
-
-        replacements = [
-            (
-                re.compile(
-                    r"Scholars such as .*? have provided nuanced analyses of .*?\.",
-                    re.IGNORECASE | re.DOTALL,
-                ),
-                "Later interpretations exist, but this run retained only the primary legal source as a verified citation.",
-            ),
-            (
-                re.compile(
-                    r"More recent scholarship, however, has sought to contextualize .*? standards of professionalization\.",
-                    re.IGNORECASE | re.DOTALL,
-                ),
-                "Later interpretations have situated the case within broader debates, but this run retained only a primary legal source for direct verification.",
-            ),
-        ]
-
-        for pat, repl in replacements:
-            main = pat.sub(repl, main)
-
-        main = re.sub(r"\b[A-Z][a-z]+ [A-Z]\. [A-Z][a-z]+ \(\d{4}\)", "later commentators", main)
-        main = re.sub(r"\b[A-Z][a-z]+ [A-Z][a-z]+ \(\d{4}\)", "later commentators", main)
-
-        for pat in _SCHOLARLY_CLAIM_PATTERNS:
-            main = pat.sub(
-                "Later interpretations exist, but this run retained only the primary legal source as a verified citation.",
-                main,
-            )
-
-        if main != original:
-            warnings.append("Deintensified unsupported secondary-scholarship claims after bibliography pruning.")
-
-    rebuilt = _clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip()
-    return _clean_whitespace(rebuilt), warnings
-
-
-# ------------------------------------------------------------------------------
-# STRUCTURE REPAIR
-# ------------------------------------------------------------------------------
-def repair_required_structure(topic: str, body: str) -> Tuple[str, List[str]]:
-    warnings: List[str] = []
-    body = body.strip()
-
-    if "# 📚 BIBLIOGRAPHY" in body:
-        main, bib = body.split("# 📚 BIBLIOGRAPHY", 1)
-    else:
-        main, bib = body, ""
-
-    abstract = _section_text(main, "# Abstract", ["# Historical Analysis", "# Semiotic Analysis"]) or ""
-    historical = _section_text(main, "# Historical Analysis", ["# Semiotic Analysis"]) or ""
-    semiotic = _section_text(main, "# Semiotic Analysis", []) or ""
-
-    orphan_lines = []
-    for ln in main.splitlines():
-        s = ln.strip()
-        if s and not s.startswith("#"):
-            orphan_lines.append(ln)
-    orphan_text = "\n".join(orphan_lines).strip()
-
-    if not abstract:
-        if orphan_text:
-            abstract = orphan_text.split("\n\n")[0].strip()
-            warnings.append("Recovered abstract from orphan prose.")
-        else:
-            abstract = (
-                f"This draft on {topic} was recovered from a structurally degraded run. "
-                "Evidence and section completeness may be limited."
-            )
-            warnings.append("Synthesized missing abstract.")
-
-    if not historical:
-        historical = (
-            "## Historiography & Scholarly Debate\n"
-            "Evidence was limited in this run, so historiographical coverage remains provisional.\n\n"
-            "## Material Conditions / Actors / Events\n"
-            "Recovered output did not cleanly preserve a full historical section.\n\n"
-            "## Contradictions / Limits / Ambiguities\n"
-            "This recovery preserves structure but not full evidentiary depth."
+    if not sections["# Abstract"].strip():
+        sections["# Abstract"] = (
+            f"This draft on {topic} was recovered from a structurally degraded output. "
+            "Claims should be treated as provisional unless citation support is visible.\n"
         )
-        warnings.append("Synthesized missing Historical Analysis.")
-    else:
-        if "## Historiography & Scholarly Debate" not in historical:
-            historical = "## Historiography & Scholarly Debate\nRecovered output lacked an explicit historiography subheader.\n\n" + historical.strip()
-            warnings.append("Inserted missing historiography subsection header.")
-        if "## Material Conditions / Actors / Events" not in historical:
-            historical += "\n\n## Material Conditions / Actors / Events\nRecovered output lacked an explicit material conditions subsection."
-            warnings.append("Inserted missing material conditions subsection header.")
-        if "## Contradictions / Limits / Ambiguities" not in historical:
-            historical += "\n\n## Contradictions / Limits / Ambiguities\nRecovered output lacked an explicit contradictions subsection."
-            warnings.append("Inserted missing contradictions subsection header.")
+        warnings.append("Synthesized missing abstract.")
 
-    if not semiotic:
-        semiotic = (
-            "## Narrative Framing\n"
-            "The model did not return a stable semiotic section in this run.\n\n"
-            "## Rhetorical Mechanics\n"
-            "Interpretive claims should be treated as provisional until source-backed revision."
+    if not sections["# Historical Analysis"].strip():
+        sections["# Historical Analysis"] = (
+            "## Historiography & Scholarly Debate\nEvidence was limited in this run.\n\n"
+            "## Material Conditions / Actors / Events\nRecovered output did not preserve this section.\n\n"
+            "## Contradictions / Limits / Ambiguities\nRecovery preserved shell structure only.\n"
         )
-        warnings.append("Synthesized missing Semiotic Analysis.")
-    else:
-        if "## Narrative Framing" not in semiotic:
-            semiotic = "## Narrative Framing\nRecovered output lacked an explicit framing subheader.\n\n" + semiotic.strip()
-            warnings.append("Inserted missing narrative framing subsection header.")
-        if "## Rhetorical Mechanics" not in semiotic:
-            semiotic += "\n\n## Rhetorical Mechanics\nRecovered output lacked an explicit rhetorical mechanics subsection."
-            warnings.append("Inserted missing rhetorical mechanics subsection header.")
+        warnings.append("Synthesized missing historical section.")
+
+    if not sections["# Semiotic Analysis"].strip():
+        sections["# Semiotic Analysis"] = (
+            "## Narrative Framing\nRecovered output did not preserve this section.\n\n"
+            "## Rhetorical Mechanics\nInterpretive claims remain provisional pending source review.\n"
+        )
+        warnings.append("Synthesized missing semiotic section.")
 
     rebuilt = (
         "# Abstract\n\n"
-        f"{abstract.strip()}\n\n"
+        f"{sections['# Abstract'].strip()}\n\n"
         "# Historical Analysis\n\n"
-        f"{historical.strip()}\n\n"
+        f"{sections['# Historical Analysis'].strip()}\n\n"
         "# Semiotic Analysis\n\n"
-        f"{semiotic.strip()}\n\n"
+        f"{sections['# Semiotic Analysis'].strip()}\n\n"
         "# 📚 BIBLIOGRAPHY\n"
-        f"{bib.strip()}"
+        f"{sections['# 📚 BIBLIOGRAPHY'].strip()}"
     )
-    return _clean_whitespace(rebuilt), warnings
+    return clean_whitespace(rebuilt), warnings
 
 
-# ------------------------------------------------------------------------------
-# ALIGNMENT / AUTO-STITCH / PRUNE-LAST
-# ------------------------------------------------------------------------------
-def align_body_and_bibliography(body: str, kept_ids: List[str]) -> Tuple[str, List[str]]:
-    """
-    Only after salvage do we prune orphan refs.
-    """
+def sanitize_bibliography(body: str) -> Tuple[str, List[str]]:
     warnings: List[str] = []
-
     if "# 📚 BIBLIOGRAPHY" not in body:
         return body, warnings
 
-    main, bib = body.split("# 📚 BIBLIOGRAPHY", 1)
-    kept = set(kept_ids)
+    main, bib = split_body_bib(body)
+    lines = [ln.strip() for ln in bib.splitlines() if ln.strip()]
+    kept = [ln for ln in lines if BIB_LINE_RE.match(ln)]
+    removed = [ln for ln in lines if not BIB_LINE_RE.match(ln)]
 
-    if kept:
-        main2 = re.sub(
-            r"\[\^(\d+)\]",
-            lambda m: m.group(0) if m.group(1) in kept else "",
-            main,
-        )
-        if main2 != main:
-            warnings.append("Removed orphan body footnotes after bibliography salvage.")
-            main = main2
+    for line in removed:
+        warnings.append(f"Removed invalid bibliography line: {line[:120]}")
 
-    rebuilt = _clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip()
-    return _clean_whitespace(rebuilt), warnings
+    rebuilt = clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + "\n".join(kept)
+    return clean_whitespace(rebuilt), warnings
 
 
-def _inject_footnote_into_section(section_text: str, footnote_id: str) -> Optional[str]:
-    lines = section_text.splitlines()
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if FOOTNOTE_REF_RE.search(stripped):
-            continue
-        if not re.search(r"[A-Za-z]", stripped):
-            continue
+def align_body_and_bib(body: str) -> Tuple[str, List[str]]:
+    warnings: List[str] = []
+    refs = set(body_refs(body))
+    b_ids = set(bib_ids(body))
 
-        if stripped.endswith((".", "!", "?", "”", '"')):
-            lines[i] = f"{line}[^{footnote_id}]"
-        else:
-            lines[i] = f"{line} [^{footnote_id}]"
-        return "\n".join(lines)
-    return None
+    if not refs or not b_ids:
+        return body, warnings
 
+    good = refs & b_ids
+    if good != refs:
+        main, bib = split_body_bib(body)
+        main = re.sub(r"\[\^(\d+)\]", lambda m: m.group(0) if m.group(1) in good else "", main)
+        body = clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip()
+        warnings.append("Removed orphan body footnotes.")
+    if good != b_ids:
+        kept_lines = [ln for ln in bib_lines(body) if re.match(r"\[\^(\d+)\]:", ln) and re.match(r"\[\^(\d+)\]:", ln).group(1) in good]
+        main, _ = split_body_bib(body)
+        body = clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + "\n".join(kept_lines)
+        warnings.append("Pruned uncited bibliography lines.")
 
-def autostitch_first_surviving_bibref(body: str) -> Optional[str]:
-    refs = set(_body_refs(body))
-    bib_ids = list(dict.fromkeys(_bib_ids(body)))
-
-    if refs or not bib_ids:
-        return None
-
-    footnote_id = bib_ids[0]
-    targets = [
-        ("# Historical Analysis", ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]),
-        ("# Abstract", ["# Historical Analysis", "# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]),
-        ("# Semiotic Analysis", ["# 📚 BIBLIOGRAPHY"]),
-    ]
-
-    for header, next_headers in targets:
-        span = _find_section_span(body, header, next_headers)
-        if not span:
-            continue
-        start, end = span
-        section_text = body[start:end]
-        updated = _inject_footnote_into_section(section_text, footnote_id)
-        if updated is not None:
-            return body[:start] + updated + body[end:]
-
-    return None
+    return clean_whitespace(body), warnings
 
 
 # ------------------------------------------------------------------------------
 # VALIDATION
 # ------------------------------------------------------------------------------
-def _quotes_ok(meta: Dict[str, Any]) -> bool:
-    quotes = meta.get("quotes", [])
-    if quotes is None:
-        return True
-    return isinstance(quotes, list) and all(isinstance(q, str) for q in quotes)
-
-
 @dataclass
 class ValidationResult:
     ok: bool
     error: str = ""
     warnings: List[str] = field(default_factory=list)
     distinct_citations: int = 0
-    salvageable_zero_citation: bool = False
-    fallback_emitted: bool = False
-    bibliography_only: bool = False
-    force_emit_safe: bool = False
 
 
 def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
@@ -809,102 +515,52 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
     if not body.strip():
         return ValidationResult(False, "Empty output")
 
-    for h in REQUIRED_HEADERS:
-        if h not in body:
-            return ValidationResult(False, f"Missing section: {h}", force_emit_safe=False)
+    for header in REQUIRED_HEADERS:
+        if header not in body:
+            return ValidationResult(False, f"Missing section: {header}")
 
-    if not _quotes_ok(meta):
-        warnings.append("Metadata quotes were malformed and normalized to [].")
-        meta["quotes"] = []
+    refs = set(body_refs(body))
+    b_ids = set(bib_ids(body))
+    bib = bib_lines(body)
 
-    refs = set(_body_refs(body))
-    bib_ids = set(_bib_ids(body))
-    ref_count = len(refs)
+    if len(refs) < MIN_REQUIRED_CITATIONS:
+        return ValidationResult(False, f"Only {len(refs)} distinct citations", distinct_citations=len(refs))
 
-    if ref_count == 0 and bib_ids:
-        warnings.append("Bibliography present but no in-body footnotes.")
-        return ValidationResult(
-            False,
-            "Bibliography present but no in-body footnotes",
-            warnings=_dedupe_warnings(warnings),
-            distinct_citations=0,
-            salvageable_zero_citation=True,
-            bibliography_only=True,
-            force_emit_safe=True,
-        )
+    if not bib:
+        return ValidationResult(False, "Missing bibliography", distinct_citations=len(refs))
 
-    if ref_count == 0:
-        warnings.append("Only 0 distinct citations")
-        return ValidationResult(
-            False,
-            "Only 0 distinct citations",
-            warnings=_dedupe_warnings(warnings),
-            distinct_citations=0,
-            salvageable_zero_citation=True,
-            force_emit_safe=True,
-        )
+    if refs != b_ids:
+        return ValidationResult(False, "Citation mismatch between body and bibliography", distinct_citations=len(refs))
 
-    if ref_count < MIN_REQUIRED_CITATIONS:
-        return ValidationResult(
-            False,
-            f"Only {ref_count} distinct citations",
-            warnings=_dedupe_warnings(warnings),
-            distinct_citations=ref_count,
-            force_emit_safe=True,
-        )
-
-    if not bib_ids:
-        return ValidationResult(
-            False,
-            "Missing bibliography",
-            warnings=_dedupe_warnings(warnings),
-            distinct_citations=ref_count,
-            salvageable_zero_citation=True,
-            force_emit_safe=True,
-        )
-
-    if refs != bib_ids:
-        warnings.append("Citation mismatch between body and bibliography.")
-        return ValidationResult(
-            False,
-            "Citation mismatch between body and bibliography",
-            warnings=_dedupe_warnings(warnings),
-            distinct_citations=ref_count,
-            salvageable_zero_citation=True,
-            force_emit_safe=True,
-        )
-
-    lines = _bib_lines(body)
-    if not lines:
-        return ValidationResult(
-            False,
-            "Empty bibliography",
-            warnings=_dedupe_warnings(warnings),
-            distinct_citations=ref_count,
-            salvageable_zero_citation=True,
-            force_emit_safe=True,
-        )
-
-    for line in lines:
+    for line in bib:
         if not BIB_LINE_RE.match(line):
-            warnings.append(f"Invalid bibliography format retained provisionally: {line[:120]}")
-            continue
-        is_fake, missing_italics = _has_fake_patterns(line)
-        if is_fake:
-            warnings.append(f"Suspicious citation retained provisionally: {line[:120]}")
-        if missing_italics:
-            warnings.append(f"Citation missing italics (soft warning): {line[:80]}")
+            return ValidationResult(False, "Invalid bibliography format", distinct_citations=len(refs))
 
-    if ref_count < TARGET_CITATIONS:
+    for key in CRITICAL_META_KEYS:
+        value = meta.get(key)
+        if isinstance(value, str) and not value.strip():
+            return ValidationResult(False, f"Empty metadata field: {key}", distinct_citations=len(refs))
+        if isinstance(value, list) and not value:
+            return ValidationResult(False, f"Empty metadata field: {key}", distinct_citations=len(refs))
+        if value is None:
+            return ValidationResult(False, f"Empty metadata field: {key}", distinct_citations=len(refs))
+
+    quotes = meta.get("quotes", [])
+    if not isinstance(quotes, list) or not quotes:
+        return ValidationResult(False, "Metadata quotes invalid or empty", distinct_citations=len(refs))
+    if not all(isinstance(q, str) and "—" in q for q in quotes):
+        return ValidationResult(False, "Metadata quotes invalid or unattributed", distinct_citations=len(refs))
+
+    if len(refs) < TARGET_CITATIONS:
         warnings.append(
-            f"Low citation density: {ref_count} distinct citation(s); target is {TARGET_CITATIONS}."
+            f"Low citation density: {len(refs)} distinct citation(s); target is {TARGET_CITATIONS}."
         )
 
-    return ValidationResult(True, "", _dedupe_warnings(warnings), ref_count, force_emit_safe=True)
+    return ValidationResult(True, "", dedupe(warnings), len(refs))
 
 
 # ------------------------------------------------------------------------------
-# SYNAPSE
+# MODEL / PIPELINE
 # ------------------------------------------------------------------------------
 @dataclass
 class Synapse:
@@ -924,283 +580,107 @@ class StubAgent:
         return text
 
 
-# ------------------------------------------------------------------------------
-# PIPELINE PASS
-# ------------------------------------------------------------------------------
-def run_cleanup_pipeline(topic: str, body: str, meta: Dict[str, Any]) -> Tuple[str, Dict[str, Any], List[str]]:
-    """
-    Stable order:
-      extract -> repair structure -> sanitize bib -> clean claims -> align -> autostitch
-    """
+def cleanup_pipeline(topic: str, body: str, meta: Dict[str, Any]) -> Tuple[str, Dict[str, Any], List[str]]:
     warnings: List[str] = []
-    meta = _meta_normalize(meta, topic=topic)
-
-    body, structure_warnings = repair_required_structure(topic, body)
+    body, structure_warnings = repair_structure(topic, body)
     warnings.extend(structure_warnings)
 
-    body, bib_warnings, kept_ids, removed_ids, bib_map = sanitize_bibliography(body)
+    body, bib_warnings = sanitize_bibliography(body)
     warnings.extend(bib_warnings)
 
-    body, claim_warnings = clean_unsupported_body_claims(body, kept_ids, removed_ids, bib_map)
-    warnings.extend(claim_warnings)
-
-    body, align_warnings = align_body_and_bibliography(body, kept_ids)
+    body, align_warnings = align_body_and_bib(body)
     warnings.extend(align_warnings)
 
-    stitched = autostitch_first_surviving_bibref(body)
-    if stitched:
-        body = _clean_whitespace(stitched)
-        warnings.append("Auto-stitched first surviving bibliography id into body.")
-
-    return body, meta, _dedupe_warnings(warnings)
+    meta = normalize_meta(meta, topic, body)
+    return clean_whitespace(body), meta, dedupe(warnings)
 
 
-# ------------------------------------------------------------------------------
-# ATTEMPT RUNNER
-# ------------------------------------------------------------------------------
-def _serialize_validation(result: ValidationResult) -> str:
+def serialize_validation(result: ValidationResult) -> str:
     return json.dumps(
         {
             "ok": result.ok,
             "error": result.error,
             "warnings": result.warnings,
             "distinct_citations": result.distinct_citations,
-            "salvageable_zero_citation": result.salvageable_zero_citation,
-            "fallback_emitted": result.fallback_emitted,
-            "bibliography_only": result.bibliography_only,
-            "force_emit_safe": result.force_emit_safe,
         },
         indent=2,
         ensure_ascii=False,
     )
 
 
-def _attempt(
-    syn: Synapse,
-    topic: str,
-    label: str,
-    prompt: str,
-) -> Tuple[str, Dict[str, Any], ValidationResult]:
+def attempt(syn: Synapse, topic: str, label: str, prompt: str) -> Tuple[str, Dict[str, Any], ValidationResult]:
     save_debug(topic, f"{label}_prompt", prompt)
     raw = syn.ask(prompt)
     save_debug(topic, f"{label}_raw", raw)
 
     body, meta, meta_warnings = extract_metadata(raw)
-    body, meta, pipeline_warnings = run_cleanup_pipeline(topic, body, meta)
+    body, meta, pipeline_warnings = cleanup_pipeline(topic, body, meta)
 
     result = validate(body, meta)
-    result.warnings = _dedupe_warnings(meta_warnings + pipeline_warnings + result.warnings)
+    result.warnings = dedupe(meta_warnings + pipeline_warnings + result.warnings)
 
     save_debug(topic, f"{label}_body", body)
     save_debug(topic, f"{label}_meta", json.dumps(meta, indent=2, ensure_ascii=False))
-    save_debug(topic, f"{label}_validation", _serialize_validation(result))
+    save_debug(topic, f"{label}_validation", serialize_validation(result))
     return body, meta, result
 
 
-def _should_attempt_citation_restore(body: str, result: ValidationResult) -> bool:
-    body_ref_count = len(set(_body_refs(body)))
-    bib_id_count = len(set(_bib_ids(body)))
-    concrete_claims = _count_concrete_claim_signals(body)
-
-    return (
-        not result.ok
-        and concrete_claims > 3
-        and (body_ref_count == 0 or bib_id_count == 0)
-    )
-
-
-# ------------------------------------------------------------------------------
-# FALLBACK
-# ------------------------------------------------------------------------------
-def build_content_preserving_fallback(
-    topic: str,
-    body: str,
-    meta: Dict[str, Any],
-    prior_error: str,
-    prior_warnings: Optional[List[str]] = None,
-) -> Tuple[str, Dict[str, Any], ValidationResult]:
-    prior_warnings = prior_warnings or []
-
-    body, meta, pipeline_warnings = run_cleanup_pipeline(topic, body, meta)
-
-    main, bib = _split(body)
-    if not bib.strip():
-        bib = (
-            "No verified bibliography entries survived recovery.\n"
-            "Manual source review required before authoritative use."
-        )
-        body = _clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + bib
-
-    abstract = _section_text(
-        body,
-        "# Abstract",
-        ["# Historical Analysis", "# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"],
-    ).strip()
-
-    recovery_note = (
-        f"Recovery note: this artifact was emitted after validation breakdown "
-        f"({prior_error}). Content was preserved where possible and should be "
-        f"treated as provisional pending manual source review."
-    )
-    if recovery_note not in abstract:
-        abstract = _clean_whitespace(abstract + "\n\n" + recovery_note)
-
-    historical = _section_text(body, "# Historical Analysis", ["# Semiotic Analysis", "# 📚 BIBLIOGRAPHY"]).strip()
-    semiotic = _section_text(body, "# Semiotic Analysis", ["# 📚 BIBLIOGRAPHY"]).strip()
-    bibliography = _section_text(body, "# 📚 BIBLIOGRAPHY", []).strip()
-
-    rebuilt = (
-        "# Abstract\n\n"
-        f"{abstract}\n\n"
-        "# Historical Analysis\n\n"
-        f"{historical}\n\n"
-        "# Semiotic Analysis\n\n"
-        f"{semiotic}\n\n"
-        "# 📚 BIBLIOGRAPHY\n"
-        f"{bibliography}"
-    )
-
-    meta = _meta_normalize(meta, topic=topic)
-    meta["quotes"] = []
-    if not meta.get("bias_analysis"):
-        meta["bias_analysis"] = "Provisional synthesis emitted after validation recovery."
-    if not meta.get("grok_ctx_reflection"):
-        meta["grok_ctx_reflection"] = (
-            "This artifact preserves recovered analytical content instead of refusing emission."
-        )
-
-    warnings = _dedupe_warnings(
-        prior_warnings
-        + pipeline_warnings
-        + [f"Content-preserving fallback engaged after: {prior_error}"]
-    )
-
-    if len(set(_body_refs(rebuilt))) < TARGET_CITATIONS:
-        warnings.append("Recovered artifact remains below target citation density.")
-
-    result = ValidationResult(
-        ok=True,
-        error="",
-        warnings=_dedupe_warnings(warnings),
-        distinct_citations=len(set(_body_refs(rebuilt))),
-        salvageable_zero_citation=True,
-        fallback_emitted=True,
-        force_emit_safe=True,
-    )
-    return _clean_whitespace(rebuilt), meta, result
-
-
-# ------------------------------------------------------------------------------
-# GENERATION CASCADE
-# ------------------------------------------------------------------------------
 def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationResult]:
-    attempts: List[Tuple[str, str]] = []
+    body1, meta1, res1 = attempt(
+        syn,
+        topic,
+        "attempt1_primary",
+        PROMPT.format(topic=topic, scaffold=HARD_SCAFFOLD),
+    )
+    if res1.ok:
+        return body1, meta1, res1
+    print(f"⚠ Failed: {res1.error}")
 
-    prompt_1 = PROMPT.format(topic=topic, scaffold=HARD_SCAFFOLD)
-    body1, meta1, result1 = _attempt(syn, topic, "attempt1_primary", prompt_1)
-    attempts.append(("attempt1_primary", result1.error or "; ".join(result1.warnings)))
-    if result1.ok:
-        return body1, meta1, result1
-    print(f"⚠ Failed: {result1.error}")
-
-    prompt_2 = REBUILD_PROMPT.format(topic=topic, scaffold=HARD_SCAFFOLD)
-    body2, meta2, result2 = _attempt(syn, topic, "attempt2_rebuild", prompt_2)
-    attempts.append(("attempt2_rebuild", result2.error or "; ".join(result2.warnings)))
-    if result2.ok:
-        return body2, meta2, result2
-    print(f"⚠ Failed: {result2.error}")
+    body2, meta2, res2 = attempt(
+        syn,
+        topic,
+        "attempt2_rebuild",
+        REBUILD_PROMPT.format(topic=topic, scaffold=HARD_SCAFFOLD),
+    )
+    if res2.ok:
+        return body2, meta2, res2
+    print(f"⚠ Failed: {res2.error}")
 
     repair_seed = body2 if len(body2.strip()) >= len(body1.strip()) else body1
-    prompt_3 = REPAIR_PROMPT.format(
-        topic=topic,
-        error=result2.error,
-        draft=repair_seed,
-        scaffold=HARD_SCAFFOLD,
-    )
-    body3, meta3, result3 = _attempt(syn, topic, "attempt3_repair", prompt_3)
-    attempts.append(("attempt3_repair", result3.error or "; ".join(result3.warnings)))
-    if result3.ok:
-        return body3, meta3, result3
-    print(f"⚠ Failed: {result3.error}")
-
-    rescue_seed = body3 if len(body3.strip()) >= len(repair_seed.strip()) else repair_seed
-    prompt_4 = ZERO_CITATION_RESCUE_PROMPT.format(
-        topic=topic,
-        draft=rescue_seed,
-        scaffold=HARD_SCAFFOLD,
-    )
-    body4, meta4, result4 = _attempt(syn, topic, "attempt4_zero_citation_rescue", prompt_4)
-    attempts.append(("attempt4_zero_citation_rescue", result4.error or "; ".join(result4.warnings)))
-    if result4.ok:
-        return body4, meta4, result4
-    print(f"⚠ Failed: {result4.error}")
-
-    # New: citation restoration before fallback
-    restore_seed_candidates = [
-        (body1, meta1, result1),
-        (body2, meta2, result2),
-        (body3, meta3, result3),
-        (body4, meta4, result4),
-    ]
-    best_restore_body, _, best_restore_result = max(
-        restore_seed_candidates,
-        key=lambda x: (
-            len(x[0].strip()),
-            _count_concrete_claim_signals(x[0]),
-            len(set(_body_refs(x[0]))),
+    body3, meta3, res3 = attempt(
+        syn,
+        topic,
+        "attempt3_repair",
+        REPAIR_PROMPT.format(
+            topic=topic,
+            error=res2.error,
+            draft=repair_seed,
+            scaffold=HARD_SCAFFOLD,
         ),
     )
+    if res3.ok:
+        return body3, meta3, res3
+    print(f"⚠ Failed: {res3.error}")
 
-    if _should_attempt_citation_restore(best_restore_body, best_restore_result):
-        restore_prompt = CITATION_RESTORE_PROMPT.format(draft=best_restore_body)
-        body5, meta5, result5 = _attempt(syn, topic, "attempt5_restore_citations", restore_prompt)
-        attempts.append(("attempt5_restore_citations", result5.error or "; ".join(result5.warnings)))
-        if result5.ok and len(set(_body_refs(body5))) > 0 and len(set(_bib_ids(body5))) > 0:
-            return body5, meta5, result5
-        print(f"⚠ Failed: {result5.error}")
-
-        restore_seed_candidates.append((body5, meta5, result5))
-
-    best_body, best_meta, best_result = max(
-        restore_seed_candidates,
-        key=lambda x: (
-            len(x[0].strip()),
-            len(set(_body_refs(x[0]))),
-            len(set(_bib_ids(x[0]))),
-            _count_concrete_claim_signals(x[0]),
-        ),
-    )
-
-    fallback_body, fallback_meta, fallback_result = build_content_preserving_fallback(
-        topic=topic,
-        body=best_body if best_body.strip() else HARD_SCAFFOLD,
-        meta=best_meta if best_meta else {},
-        prior_error=best_result.error or "Unknown validation failure",
-        prior_warnings=best_result.warnings,
-    )
-
-    save_debug(topic, "attempt6_content_preserving_fallback_body", fallback_body)
-    save_debug(
+    quote_seed = body3 if count_concrete_signals(body3) >= count_concrete_signals(repair_seed) else repair_seed
+    body4, meta4, res4 = attempt(
+        syn,
         topic,
-        "attempt6_content_preserving_fallback_meta",
-        json.dumps(fallback_meta, indent=2, ensure_ascii=False),
+        "attempt4_quote_repair",
+        QUOTE_REPAIR_PROMPT.format(draft=quote_seed),
     )
-    save_debug(
-        topic,
-        "attempt6_content_preserving_fallback_validation",
-        _serialize_validation(fallback_result),
-    )
+    if res4.ok:
+        return body4, meta4, res4
+    print(f"⚠ Failed: {res4.error}")
 
-    attempts.append(("attempt6_content_preserving_fallback", "Recovered best available content and emitted provisionally."))
-    save_debug(topic, "attempt_summary", "\n".join(f"{name}: {msg}" for name, msg in attempts))
-    return fallback_body, fallback_meta, fallback_result
+    return body4, meta4, res4
 
 
 # ------------------------------------------------------------------------------
-# ENTRY POINT
+# ENTRYPOINT
 # ------------------------------------------------------------------------------
 def run() -> None:
-    print("✶⌁✶ SCHOLARLY DIVE v3.5.3 [LEAN+SOFT-GATED+CITATION-RESTORE] ONLINE")
+    print(BANNER)
 
     topic = input("Enter Research Topic: ").strip()
     if not topic:
@@ -1211,48 +691,33 @@ def run() -> None:
 
     print(f"✶ Synapse: {AGENT} identity manifested.")
     syn = Synapse()
-
     orch = VSEncOrchestrator({"SCHOLARLY_STUB": StubAgent()})
 
     print(f"✶ Synthesizing: {topic}")
     body, meta, result = generate(syn, topic)
 
     if not result.ok:
-        body, meta, result = build_content_preserving_fallback(
-            topic,
-            body if body.strip() else HARD_SCAFFOLD,
-            meta,
-            result.error or "Late-stage validation failure",
-            result.warnings,
-        )
-
-    if result.warnings:
-        for warning in _dedupe_warnings(result.warnings):
+        print(f"❌ REFUSED: {result.error}")
+        for warning in dedupe(result.warnings):
             print(f"⚠ Warning: {warning}")
+        return
+
+    for warning in dedupe(result.warnings):
+        print(f"⚠ Warning: {warning}")
 
     summary = "Scholarly synthesis generated."
     longform_summary = "See full analysis."
     status = "active"
     priority = "medium"
 
-    if result.fallback_emitted:
-        summary = f"Provisional scholarly draft emitted under citation-restoration recovery for {topic}."
-        longform_summary = (
-            "Artifact emitted because the engine was configured to preserve recoverable analysis "
-            "and attempt citation restoration before fallback. This draft remains provisional and "
-            "should be manually source-reviewed before authoritative use."
-        )
-        status = "draft"
-        priority = "high"
-    elif result.distinct_citations < TARGET_CITATIONS:
+    if result.distinct_citations < TARGET_CITATIONS:
         summary = (
             f"Scholarly synthesis generated with limited evidentiary support "
             f"({result.distinct_citations} distinct citation(s))."
         )
         longform_summary = (
-            "Artifact emitted under soft gate. Structure and minimum citation integrity passed, "
-            "but citation density is below target. Claims should be treated as provisional "
-            "and revisited with stronger sourcing."
+            "Artifact passed hard validation and minimum citation integrity, "
+            "but citation density remains below target."
         )
         status = "draft"
         priority = "medium"
@@ -1262,7 +727,7 @@ def run() -> None:
         input_text=body,
         invocation_type="scholarly_dive",
         custom_params={
-            "title": meta.get("title", topic or "Research"),
+            "title": meta["title"],
             "relative_dir": ARTIFACT_DIR,
             "summary": summary,
             "longform_summary": longform_summary,
@@ -1270,18 +735,12 @@ def run() -> None:
             "style": "AlgorithmicGriot",
             "status": status,
             "priority": priority,
-            "tags": meta.get("tags", []),
-            "key_themes": meta.get("key_themes", []),
-            "bias_analysis": meta.get(
-                "bias_analysis",
-                "Grounded scholarly synthesis with explicit handling of evidentiary limits.",
-            ),
-            "grok_ctx_reflection": meta.get(
-                "grok_ctx_reflection",
-                "Research artifact generated through scholarly_dive.",
-            ),
-            "quotes": meta.get("quotes", []),
-            "adinkra": meta.get("adinkra", []),
+            "tags": meta["tags"],
+            "key_themes": meta["key_themes"],
+            "bias_analysis": meta["bias_analysis"],
+            "grok_ctx_reflection": meta["grok_ctx_reflection"],
+            "quotes": meta["quotes"],
+            "adinkra": meta["adinkra"],
         },
     )
 
