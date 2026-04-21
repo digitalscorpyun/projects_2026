@@ -1,9 +1,9 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — THE SCHOLARLY SYNTHESIS ENGINE v3.7.0 [FOCUS-HARDENED]
+# ✶⌁✶ scholarly_dive.py — THE SCHOLARLY SYNTHESIS ENGINE v3.8.0 [DISCIPLINE-HARDENED]
 # ==============================================================================
 # ROLE: Lean synthesis client with fail-fast validation, citation integrity,
-#       metadata enforcement, topic-focus enforcement, and vault-safe emission
-#       discipline.
+#       metadata enforcement, topic-focus enforcement, unsupported-specificity
+#       suppression, and vault-safe emission discipline.
 # COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
 # ==============================================================================
 
@@ -39,13 +39,14 @@ ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
 DEBUG_DIR = Path("C:/Users/digitalscorpyun/projects_2026/avm/_debug/scholarly_dive")
 LA_TZ = ZoneInfo("America/Los_Angeles")
 
-VERSION = "v3.7.0"
-BANNER = f"✶⌁✶ SCHOLARLY DIVE {VERSION} [FOCUS-HARDENED] ONLINE"
+VERSION = "v3.8.0"
+BANNER = f"✶⌁✶ SCHOLARLY DIVE {VERSION} [DISCIPLINE-HARDENED] ONLINE"
 
 TARGET_CITATIONS = 3
 MIN_REQUIRED_CITATIONS = 1
 MIN_TAGS = 3
 MIN_KEY_THEMES = 3
+MAX_PARAGRAPHS_PER_SINGLE_CITATION = 2
 
 REQUIRED_HEADERS = [
     "# Abstract",
@@ -67,9 +68,14 @@ CRITICAL_META_KEYS = [
 FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
 BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:\s+(.+)$")
 QUOTED_TEXT_RE = re.compile(r'[“"]([^"\n]{12,260})[”"]\s*[—-]\s*([^\n]+)')
-YEAR_RE = re.compile(r"\b(1[5-9]\d{2}|20\d{2})\b")
 PAREN_YEAR_RE = re.compile(r"\((1[5-9]\d{2}|20\d{2})\)")
 TITLE_TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
+PAGE_CLAIM_RE = re.compile(r"\bp\.\s*\d+\b|\bpp\.\s*\d+(?:-\d+)?\b", re.IGNORECASE)
+ARCHIVE_CLAIM_RE = re.compile(r"\barchives?\b|\bhoused in\b|\bcollection\b", re.IGNORECASE)
+DATE_CLAIM_RE = re.compile(
+    r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}\b"
+)
+YEAR_RE = re.compile(r"\b(1[5-9]\d{2}|20\d{2})\b")
 
 HARD_SCAFFOLD = """# Abstract
 
@@ -110,8 +116,28 @@ class TopicProfile:
     guidance: str = ""
 
 
+def clean_whitespace(text: str) -> str:
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+def dedupe(items: List[str]) -> List[str]:
+    seen = set()
+    out: List[str] = []
+    for item in items:
+        val = str(item).strip()
+        if val and val not in seen:
+            seen.add(val)
+            out.append(val)
+    return out
+
+
 def normalize_topic(topic: str) -> str:
     return re.sub(r"\s+", " ", topic).strip()
+
+
+def slug_terms(topic: str) -> List[str]:
+    words = [w.lower() for w in re.findall(r"[A-Za-z0-9]+", topic)]
+    return dedupe(words[:6]) or ["research"]
 
 
 def make_topic_profile(topic: str) -> TopicProfile:
@@ -130,6 +156,8 @@ def make_topic_profile(topic: str) -> TopicProfile:
         f"- The artifact MUST stay tightly centered on the exact topic: {raw}",
         "- Do not backslide into a general biography or overview if the topic is narrower than a whole life or oeuvre.",
         "- Prefer specific historical evidence over generic summary language.",
+        "- Do not state archival location, exact dates, page numbers, or named speeches unless support is visibly citation-bound.",
+        "- If support is thin, narrow the claim instead of performing confidence.",
     ]
 
     if focus_year:
@@ -142,13 +170,12 @@ def make_topic_profile(topic: str) -> TopicProfile:
             ]
         )
 
-    guidance = "\n".join(guidance_lines)
     return TopicProfile(
         raw_topic=raw,
         core_topic=core_topic or raw,
         focus_year=focus_year,
         focus_tokens=tokens,
-        guidance=guidance,
+        guidance="\n".join(guidance_lines),
     )
 
 
@@ -183,6 +210,8 @@ QUALITY RULES:
 - Do not turn a narrow topic into a generic overview
 - Distinguish context from direct evidence
 - If the topic includes a year, the body must make that year analytically meaningful
+- Do not place quotations, commentary, or metadata fragments inside bibliography lines
+- Do not use exact page numbers, archival locations, exact speech dates, or exact document holdings unless directly citation-bound and essential
 
 BODY FOOTNOTE FORMAT:
 - Place markers directly after factual sentences: example.[^1]
@@ -237,6 +266,7 @@ HARD RULES:
 - quotes metadata must be non-empty and contain real direct quote(s) with attribution
 - Every critical metadata field must be non-empty
 - Do not generalize beyond the exact topic
+- Do not use exact page numbers, archive claims, or exact dates unless support is tight
 - If support is thin, say so plainly and narrow the claims
 - Return only the rewritten report and metadata
 """
@@ -257,6 +287,7 @@ HARD RULES:
 - Preserve one metadata block at the end
 - Remove invented or suspicious citations
 - Fix body/bibliography alignment
+- Remove quotation bleed from bibliography
 - Restore non-empty critical metadata fields
 - quotes metadata must be non-empty and contain real direct quote(s) with attribution
 - Narrow generic claims so the artifact stays aligned to the exact topic
@@ -313,26 +344,6 @@ def save_debug(topic: str, label: str, content: str) -> None:
 # ------------------------------------------------------------------------------
 # GENERAL HELPERS
 # ------------------------------------------------------------------------------
-def clean_whitespace(text: str) -> str:
-    return re.sub(r"\n{3,}", "\n\n", text).strip()
-
-
-def dedupe(items: List[str]) -> List[str]:
-    seen = set()
-    out: List[str] = []
-    for item in items:
-        val = str(item).strip()
-        if val and val not in seen:
-            seen.add(val)
-            out.append(val)
-    return out
-
-
-def slug_terms(topic: str) -> List[str]:
-    words = [w.lower() for w in re.findall(r"[A-Za-z0-9]+", topic)]
-    return dedupe(words[:6]) or ["research"]
-
-
 def split_body_bib(body: str) -> Tuple[str, str]:
     if "# 📚 BIBLIOGRAPHY" not in body:
         return body, ""
@@ -345,14 +356,8 @@ def body_refs(body: str) -> List[str]:
     return FOOTNOTE_REF_RE.findall(main)
 
 
-def bib_ids(body: str) -> List[str]:
-    entries = parse_bibliography_entries(body)
-    return [entry_id for entry_id, _ in entries]
-
-
-def bib_lines(body: str) -> List[str]:
-    entries = parse_bibliography_entries(body)
-    return [f"[^{entry_id}]: {entry_text}" for entry_id, entry_text in entries]
+def split_paragraphs(text: str) -> List[str]:
+    return [part.strip() for part in re.split(r"\n\s*\n", text.strip()) if part.strip()]
 
 
 def has_required_headers(body: str) -> bool:
@@ -365,10 +370,6 @@ def count_concrete_signals(text: str) -> int:
         + len(re.findall(r"\b[A-Z][a-z]+ [A-Z][a-z]+\b", text))
         + len(re.findall(r"\b[A-Z][a-z]+ v\. [A-Z][A-Za-z]+\b", text))
     )
-
-
-def split_paragraphs(text: str) -> List[str]:
-    return [part.strip() for part in re.split(r"\n\s*\n", text.strip()) if part.strip()]
 
 
 def topic_token_hits(body: str, profile: TopicProfile) -> int:
@@ -388,6 +389,42 @@ def generic_tag_set(tags: List[str], topic: str) -> bool:
     base = set(slug_terms(topic))
     normalized = {str(x).strip().lower() for x in tags if str(x).strip()}
     return bool(normalized) and normalized.issubset(base)
+
+
+def paragraph_citation_ids(paragraph: str) -> List[str]:
+    return FOOTNOTE_REF_RE.findall(paragraph)
+
+
+def strip_inline_footnotes(text: str) -> str:
+    return re.sub(r"\[\^\d+\]", "", text)
+
+
+def soften_specificity_sentence(sentence: str) -> Tuple[str, bool]:
+    original = sentence
+    changed = False
+
+    if PAGE_CLAIM_RE.search(sentence):
+        sentence = PAGE_CLAIM_RE.sub("", sentence)
+        changed = True
+
+    if DATE_CLAIM_RE.search(sentence):
+        sentence = DATE_CLAIM_RE.sub("in that period", sentence)
+        changed = True
+
+    if ARCHIVE_CLAIM_RE.search(sentence) and "[^" not in sentence:
+        sentence = re.sub(r"\bnow housed in the [^.]+", "in later-collected materials", sentence, flags=re.IGNORECASE)
+        sentence = re.sub(r"\bhoused in the [^.]+", "preserved in later collections", sentence, flags=re.IGNORECASE)
+        changed = True
+
+    sentence = re.sub(r"\s{2,}", " ", sentence).strip()
+    sentence = re.sub(r"\s+([.,;:])", r"\1", sentence)
+
+    return (sentence if sentence else original), changed
+
+
+def split_sentences(paragraph: str) -> List[str]:
+    parts = re.split(r"(?<=[.!?])\s+", paragraph.strip())
+    return [p.strip() for p in parts if p.strip()]
 
 
 # ------------------------------------------------------------------------------
@@ -414,9 +451,6 @@ def repair_json(raw: str) -> Dict[str, Any]:
 
 
 def extract_balanced_json_block(text: str) -> Tuple[str, str]:
-    """
-    Returns (json_candidate, trailing_text_after_json).
-    """
     start = text.find("{")
     if start == -1:
         return "", text
@@ -575,10 +609,25 @@ def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any
 # ------------------------------------------------------------------------------
 # BIBLIOGRAPHY PARSING / RECOVERY
 # ------------------------------------------------------------------------------
+def bibliography_cutoff_index(bib: str) -> int:
+    contamination_markers = [
+        "\n### METADATA",
+        '\n{"title"',
+        '\n{ "title"',
+        '\n"',
+        "\n# ",
+    ]
+    indices = [bib.find(marker) for marker in contamination_markers if bib.find(marker) != -1]
+    return min(indices) if indices else len(bib)
+
+
 def parse_bibliography_entries(body: str) -> List[Tuple[str, str]]:
     _, bib = split_body_bib(body)
     if not bib.strip():
         return []
+
+    cutoff = bibliography_cutoff_index(bib)
+    bib = bib[:cutoff].strip()
 
     entries: List[Tuple[str, str]] = []
     current_id: Optional[str] = None
@@ -601,7 +650,8 @@ def parse_bibliography_entries(body: str) -> List[Tuple[str, str]]:
             current_parts = [seed] if seed else []
             continue
 
-        if stripped.startswith("### METADATA"):
+        # Continuation lines only survive if they don't look like quote bleed.
+        if stripped.startswith('"') or stripped.startswith("“"):
             break
 
         if current_id is not None:
@@ -620,9 +670,20 @@ def parse_bibliography_entries(body: str) -> List[Tuple[str, str]]:
         if entry_id in seen_ids:
             continue
         seen_ids.add(entry_id)
-        cleaned.append((entry_id, re.sub(r"\s{2,}", " ", entry_text).strip()))
+        entry_text = re.sub(r"\s{2,}", " ", entry_text).strip()
+        entry_text = re.sub(r'\s+"[^"]{12,260}"\s*—\s*.+$', "", entry_text).strip()
+        if entry_text:
+            cleaned.append((entry_id, entry_text))
 
     return cleaned
+
+
+def bib_ids(body: str) -> List[str]:
+    return [entry_id for entry_id, _ in parse_bibliography_entries(body)]
+
+
+def bib_lines(body: str) -> List[str]:
+    return [f"[^{entry_id}]: {entry_text}" for entry_id, entry_text in parse_bibliography_entries(body)]
 
 
 def rebuild_bibliography(body: str, entries: List[Tuple[str, str]]) -> str:
@@ -678,6 +739,71 @@ def anchor_bibliography_refs_into_body(body: str) -> Tuple[str, List[str]]:
     rebuilt_main = "\n\n".join(anchored)
     rebuilt = rebuilt_main + "\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip()
     return clean_whitespace(rebuilt), warnings
+
+
+# ------------------------------------------------------------------------------
+# BODY DISCIPLINE / SUPPRESSION
+# ------------------------------------------------------------------------------
+def suppress_unsupported_specificity(body: str) -> Tuple[str, List[str]]:
+    warnings: List[str] = []
+    main, bib = split_body_bib(body)
+    paragraphs = split_paragraphs(main)
+    repaired_paragraphs: List[str] = []
+
+    for para in paragraphs:
+        if para.startswith("#"):
+            repaired_paragraphs.append(para)
+            continue
+
+        citation_ids = paragraph_citation_ids(para)
+        sentence_parts = split_sentences(para)
+        new_sentences: List[str] = []
+
+        for sentence in sentence_parts:
+            stripped = sentence.strip()
+            risky = bool(PAGE_CLAIM_RE.search(stripped) or ARCHIVE_CLAIM_RE.search(stripped) or DATE_CLAIM_RE.search(stripped))
+
+            if risky and not citation_ids:
+                softened, changed = soften_specificity_sentence(stripped)
+                if changed:
+                    warnings.append(f"Softened unsupported specificity: {stripped[:100]}")
+                new_sentences.append(softened)
+            else:
+                new_sentences.append(stripped)
+
+        repaired_paragraphs.append(" ".join(new_sentences).strip())
+
+    rebuilt_main = "\n\n".join(repaired_paragraphs)
+    rebuilt = rebuilt_main + ("\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip() if bib.strip() else "")
+    return clean_whitespace(rebuilt), dedupe(warnings)
+
+
+def citation_load_warnings(body: str) -> List[str]:
+    warnings: List[str] = []
+    main, _ = split_body_bib(body)
+    paragraphs = [p for p in split_paragraphs(main) if not p.startswith("#")]
+
+    if not paragraphs:
+        return warnings
+
+    paragraphs_with_cites = []
+    citation_to_paragraphs: Dict[str, int] = {}
+
+    for para in paragraphs:
+        ids = set(paragraph_citation_ids(para))
+        if ids:
+            paragraphs_with_cites.append(para)
+        for cid in ids:
+            citation_to_paragraphs[cid] = citation_to_paragraphs.get(cid, 0) + 1
+
+    if len(set(body_refs(body))) == 1 and len(paragraphs_with_cites) > MAX_PARAGRAPHS_PER_SINGLE_CITATION:
+        warnings.append("A single citation is carrying too many paragraphs of argument.")
+
+    for cid, count in citation_to_paragraphs.items():
+        if count > MAX_PARAGRAPHS_PER_SINGLE_CITATION:
+            warnings.append(f"Citation [^{cid}] spans too many paragraphs ({count}).")
+
+    return dedupe(warnings)
 
 
 # ------------------------------------------------------------------------------
@@ -751,16 +877,8 @@ def sanitize_bibliography(body: str) -> Tuple[str, List[str]]:
     if not original_lines and not entries:
         return body, warnings
 
-    kept_lines = {f"[^{entry_id}]: {entry_text}" for entry_id, entry_text in entries}
-
-    for raw in original_lines:
-        stripped = raw.strip()
-        if stripped.startswith("[^") and stripped not in kept_lines and not BIB_LINE_RE.match(stripped):
-            warnings.append(f"Recovered wrapped bibliography line: {stripped[:120]}")
-        elif stripped.startswith("### METADATA"):
-            continue
-        elif not stripped.startswith("[^"):
-            continue
+    if any(line.strip().startswith('"') or line.strip().startswith("“") for line in original_lines):
+        warnings.append("Removed quote bleed from bibliography tail.")
 
     if not entries:
         warnings.append("Bibliography present but no valid entries could be recovered.")
@@ -868,6 +986,11 @@ def validate(body: str, meta: Dict[str, Any], profile: TopicProfile) -> Validati
         if not BIB_LINE_RE.match(line):
             return ValidationResult(False, "Invalid bibliography format", distinct_citations=len(refs))
 
+    claim_load = citation_load_warnings(body)
+    if claim_load and len(refs) <= 1:
+        return ValidationResult(False, claim_load[0], distinct_citations=len(refs))
+    warnings.extend(claim_load)
+
     for key in CRITICAL_META_KEYS:
         value = meta.get(key)
         if isinstance(value, str) and not value.strip():
@@ -924,8 +1047,12 @@ class StubAgent:
 
 def cleanup_pipeline(topic: str, body: str, meta: Dict[str, Any]) -> Tuple[str, Dict[str, Any], List[str]]:
     warnings: List[str] = []
+
     body, structure_warnings = repair_structure(topic, body)
     warnings.extend(structure_warnings)
+
+    body, specificity_warnings = suppress_unsupported_specificity(body)
+    warnings.extend(specificity_warnings)
 
     body, bib_warnings = sanitize_bibliography(body)
     warnings.extend(bib_warnings)
