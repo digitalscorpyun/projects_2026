@@ -1,5 +1,5 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — THE SCHOLARLY SYNTHESIS ENGINE v3.6.0 [HARDENED]
+# ✶⌁✶ scholarly_dive.py — THE SCHOLARLY SYNTHESIS ENGINE v3.6.1 [RECOVERY-HARDENED]
 # ==============================================================================
 # ROLE: Lean synthesis client with fail-fast validation, citation integrity,
 #       metadata enforcement, and vault-safe emission discipline.
@@ -38,8 +38,8 @@ ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
 DEBUG_DIR = Path("C:/Users/digitalscorpyun/projects_2026/avm/_debug/scholarly_dive")
 LA_TZ = ZoneInfo("America/Los_Angeles")
 
-VERSION = "v3.6.0"
-BANNER = f"✶⌁✶ SCHOLARLY DIVE {VERSION} [HARDENED] ONLINE"
+VERSION = "v3.6.1"
+BANNER = f"✶⌁✶ SCHOLARLY DIVE {VERSION} [RECOVERY-HARDENED] ONLINE"
 
 TARGET_CITATIONS = 3
 MIN_REQUIRED_CITATIONS = 1
@@ -62,7 +62,7 @@ CRITICAL_META_KEYS = [
 ]
 
 FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
-BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:\s+(.+)$", re.MULTILINE)
+BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:\s+(.+)$")
 QUOTED_TEXT_RE = re.compile(r'[“"]([^"\n]{12,220})[”"]\s*[—-]\s*([^\n]+)')
 TRAILING_METADATA_RE = re.compile(r"\n### METADATA\s*$", re.MULTILINE)
 
@@ -116,7 +116,8 @@ BODY FOOTNOTE FORMAT:
 - Place markers directly after factual sentences: example.[^1]
 
 BIBLIOGRAPHY FORMAT:
-- One line per entry only
+- One entry per footnote
+- You MAY wrap long bibliography entries across multiple lines, but continuation lines must stay directly under the citation they belong to
 - Example:
   [^1]: Author, *Title* (Publisher, Year).
   [^2]: Institution, *Title* (Year).
@@ -265,13 +266,13 @@ def body_refs(body: str) -> List[str]:
 
 
 def bib_ids(body: str) -> List[str]:
-    _, bib = split_body_bib(body)
-    return re.findall(r"\[\^(\d+)\]:", bib)
+    entries = parse_bibliography_entries(body)
+    return [entry_id for entry_id, _ in entries]
 
 
 def bib_lines(body: str) -> List[str]:
-    _, bib = split_body_bib(body)
-    return [ln.strip() for ln in bib.splitlines() if ln.strip()]
+    entries = parse_bibliography_entries(body)
+    return [f"[^{entry_id}]: {entry_text}" for entry_id, entry_text in entries]
 
 
 def has_required_headers(body: str) -> bool:
@@ -284,6 +285,10 @@ def count_concrete_signals(text: str) -> int:
         + len(re.findall(r"\b[A-Z][a-z]+ [A-Z][a-z]+\b", text))
         + len(re.findall(r"\b[A-Z][a-z]+ v\. [A-Z][A-Za-z]+\b", text))
     )
+
+
+def split_paragraphs(text: str) -> List[str]:
+    return [part.strip() for part in re.split(r"\n\s*\n", text.strip()) if part.strip()]
 
 
 # ------------------------------------------------------------------------------
@@ -400,6 +405,128 @@ def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any
 
 
 # ------------------------------------------------------------------------------
+# BIBLIOGRAPHY PARSING / RECOVERY
+# ------------------------------------------------------------------------------
+def parse_bibliography_entries(body: str) -> List[Tuple[str, str]]:
+    """
+    Recover bibliography entries even when the model wraps them across lines.
+
+    Accepted shapes:
+      [^1]: Author, *Title* ...
+           continuation...
+      [^2]: Institution, *Title* ...
+    """
+    _, bib = split_body_bib(body)
+    if not bib.strip():
+        return []
+
+    entries: List[Tuple[str, str]] = []
+    current_id: str | None = None
+    current_parts: List[str] = []
+
+    for raw_line in bib.splitlines():
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        match = re.match(r"^\[\^(\d+)\]:\s*(.*)$", stripped)
+        if match:
+            if current_id is not None:
+                entry_text = " ".join(part.strip() for part in current_parts if part.strip()).strip()
+                if entry_text:
+                    entries.append((current_id, entry_text))
+            current_id = match.group(1)
+            seed = match.group(2).strip()
+            current_parts = [seed] if seed else []
+            continue
+
+        if current_id is not None:
+            current_parts.append(stripped)
+
+    if current_id is not None:
+        entry_text = " ".join(part.strip() for part in current_parts if part.strip()).strip()
+        if entry_text:
+            entries.append((current_id, entry_text))
+
+    cleaned: List[Tuple[str, str]] = []
+    seen_ids = set()
+    for entry_id, entry_text in entries:
+        if not entry_text:
+            continue
+        if entry_id in seen_ids:
+            continue
+        seen_ids.add(entry_id)
+        cleaned.append((entry_id, re.sub(r"\s{2,}", " ", entry_text).strip()))
+
+    return cleaned
+
+
+def rebuild_bibliography(body: str, entries: List[Tuple[str, str]]) -> str:
+    main, _ = split_body_bib(body)
+    rebuilt = "\n".join(f"[^{entry_id}]: {entry_text}" for entry_id, entry_text in entries)
+    return clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + rebuilt
+
+
+def anchor_bibliography_refs_into_body(body: str) -> Tuple[str, List[str]]:
+    """
+    If the model produced bibliography entries but forgot inline footnote markers,
+    attach existing bibliography IDs to safe paragraph endpoints in the body.
+
+    This does not invent sources; it only repairs missing anchors.
+    """
+    warnings: List[str] = []
+    refs = set(body_refs(body))
+    entries = parse_bibliography_entries(body)
+
+    if refs or not entries:
+        return body, warnings
+
+    main, bib = split_body_bib(body)
+    paragraphs = split_paragraphs(main)
+    if not paragraphs:
+        return body, warnings
+
+    available_ids = [entry_id for entry_id, _ in entries]
+    used = 0
+    anchored: List[str] = []
+
+    for para in paragraphs:
+        if used >= len(available_ids):
+            anchored.append(para)
+            continue
+
+        stripped = para.strip()
+        if stripped.startswith("#"):
+            anchored.append(para)
+            continue
+
+        # Prefer anchoring to prose paragraphs, not headings.
+        citation = f"[^{available_ids[used]}]"
+        if re.search(r"\[\^\d+\]\s*$", stripped):
+            anchored.append(para)
+            continue
+
+        if stripped.endswith("."):
+            anchored.append(stripped + citation)
+        elif stripped.endswith(("!", "?", "”", "\"")):
+            anchored.append(stripped + citation)
+        else:
+            anchored.append(stripped + "." + citation)
+
+        used += 1
+
+    if used:
+        warnings.append(
+            f"Recovered {used} in-body citation anchor(s) from bibliography-only support."
+        )
+
+    rebuilt_main = "\n\n".join(anchored)
+    rebuilt = rebuilt_main + "\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip()
+    return clean_whitespace(rebuilt), warnings
+
+
+# ------------------------------------------------------------------------------
 # STRUCTURE / BIBLIOGRAPHY REPAIR
 # ------------------------------------------------------------------------------
 def repair_structure(topic: str, body: str) -> Tuple[str, List[str]]:
@@ -463,39 +590,64 @@ def sanitize_bibliography(body: str) -> Tuple[str, List[str]]:
     if "# 📚 BIBLIOGRAPHY" not in body:
         return body, warnings
 
-    main, bib = split_body_bib(body)
-    lines = [ln.strip() for ln in bib.splitlines() if ln.strip()]
-    kept = [ln for ln in lines if BIB_LINE_RE.match(ln)]
-    removed = [ln for ln in lines if not BIB_LINE_RE.match(ln)]
+    _, bib = split_body_bib(body)
+    original_lines = [ln.rstrip() for ln in bib.splitlines() if ln.strip()]
+    entries = parse_bibliography_entries(body)
 
-    for line in removed:
-        warnings.append(f"Removed invalid bibliography line: {line[:120]}")
+    if not original_lines and not entries:
+        return body, warnings
 
-    rebuilt = clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + "\n".join(kept)
-    return clean_whitespace(rebuilt), warnings
+    kept_lines = {f"[^{entry_id}]: {entry_text}" for entry_id, entry_text in entries}
+
+    # Report any original non-empty line that did not survive recovery.
+    for raw in original_lines:
+        stripped = raw.strip()
+        if stripped.startswith("[^") and stripped not in kept_lines and not BIB_LINE_RE.match(stripped):
+            warnings.append(f"Recovered wrapped bibliography line: {stripped[:120]}")
+        elif not stripped.startswith("[^"):
+            # Continuation lines are acceptable if attached; don't warn on them.
+            continue
+
+    if not entries:
+        warnings.append("Bibliography present but no valid entries could be recovered.")
+        return rebuild_bibliography(body, []), warnings
+
+    return rebuild_bibliography(body, entries), warnings
 
 
 def align_body_and_bib(body: str) -> Tuple[str, List[str]]:
     warnings: List[str] = []
+
+    # First try to recover missing body anchors from a valid bibliography.
+    body, anchor_warnings = anchor_bibliography_refs_into_body(body)
+    warnings.extend(anchor_warnings)
+
     refs = set(body_refs(body))
     b_ids = set(bib_ids(body))
 
-    if not refs or not b_ids:
+    if not refs and not b_ids:
         return body, warnings
 
+    if not refs and b_ids:
+        return body, dedupe(warnings + ["Bibliography recovered, but no body citations could be anchored."])
+
+    if refs and not b_ids:
+        return body, dedupe(warnings + ["Body citations present, but bibliography could not be recovered."])
+
     good = refs & b_ids
+
     if good != refs:
         main, bib = split_body_bib(body)
         main = re.sub(r"\[\^(\d+)\]", lambda m: m.group(0) if m.group(1) in good else "", main)
         body = clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip()
         warnings.append("Removed orphan body footnotes.")
+
     if good != b_ids:
-        kept_lines = [ln for ln in bib_lines(body) if re.match(r"\[\^(\d+)\]:", ln) and re.match(r"\[\^(\d+)\]:", ln).group(1) in good]
-        main, _ = split_body_bib(body)
-        body = clean_whitespace(main) + "\n\n# 📚 BIBLIOGRAPHY\n" + "\n".join(kept_lines)
+        kept_entries = [(entry_id, entry_text) for entry_id, entry_text in parse_bibliography_entries(body) if entry_id in good]
+        body = rebuild_bibliography(body, kept_entries)
         warnings.append("Pruned uncited bibliography lines.")
 
-    return clean_whitespace(body), warnings
+    return clean_whitespace(body), dedupe(warnings)
 
 
 # ------------------------------------------------------------------------------
