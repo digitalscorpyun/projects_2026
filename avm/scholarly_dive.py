@@ -1,8 +1,9 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — THE SCHOLARLY SYNTHESIS ENGINE v3.6.1 [RECOVERY-HARDENED]
+# ✶⌁✶ scholarly_dive.py — THE SCHOLARLY SYNTHESIS ENGINE v3.7.0 [FOCUS-HARDENED]
 # ==============================================================================
 # ROLE: Lean synthesis client with fail-fast validation, citation integrity,
-#       metadata enforcement, and vault-safe emission discipline.
+#       metadata enforcement, topic-focus enforcement, and vault-safe emission
+#       discipline.
 # COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
 # ==============================================================================
 
@@ -15,7 +16,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from zoneinfo import ZoneInfo
@@ -38,11 +39,13 @@ ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
 DEBUG_DIR = Path("C:/Users/digitalscorpyun/projects_2026/avm/_debug/scholarly_dive")
 LA_TZ = ZoneInfo("America/Los_Angeles")
 
-VERSION = "v3.6.1"
-BANNER = f"✶⌁✶ SCHOLARLY DIVE {VERSION} [RECOVERY-HARDENED] ONLINE"
+VERSION = "v3.7.0"
+BANNER = f"✶⌁✶ SCHOLARLY DIVE {VERSION} [FOCUS-HARDENED] ONLINE"
 
 TARGET_CITATIONS = 3
 MIN_REQUIRED_CITATIONS = 1
+MIN_TAGS = 3
+MIN_KEY_THEMES = 3
 
 REQUIRED_HEADERS = [
     "# Abstract",
@@ -63,8 +66,10 @@ CRITICAL_META_KEYS = [
 
 FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
 BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:\s+(.+)$")
-QUOTED_TEXT_RE = re.compile(r'[“"]([^"\n]{12,220})[”"]\s*[—-]\s*([^\n]+)')
-TRAILING_METADATA_RE = re.compile(r"\n### METADATA\s*$", re.MULTILINE)
+QUOTED_TEXT_RE = re.compile(r'[“"]([^"\n]{12,260})[”"]\s*[—-]\s*([^\n]+)')
+YEAR_RE = re.compile(r"\b(1[5-9]\d{2}|20\d{2})\b")
+PAREN_YEAR_RE = re.compile(r"\((1[5-9]\d{2}|20\d{2})\)")
+TITLE_TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
 
 HARD_SCAFFOLD = """# Abstract
 
@@ -92,8 +97,69 @@ HARD_SCAFFOLD = """# Abstract
 }
 """
 
+
+# ------------------------------------------------------------------------------
+# TOPIC PROFILE
+# ------------------------------------------------------------------------------
+@dataclass
+class TopicProfile:
+    raw_topic: str
+    core_topic: str
+    focus_year: Optional[str] = None
+    focus_tokens: List[str] = field(default_factory=list)
+    guidance: str = ""
+
+
+def normalize_topic(topic: str) -> str:
+    return re.sub(r"\s+", " ", topic).strip()
+
+
+def make_topic_profile(topic: str) -> TopicProfile:
+    raw = normalize_topic(topic)
+    year_match = PAREN_YEAR_RE.search(raw)
+    focus_year = year_match.group(1) if year_match else None
+    core_topic = re.sub(r"\(\s*(1[5-9]\d{2}|20\d{2})\s*\)", "", raw).strip(" -–—")
+    tokens = [
+        tok.lower()
+        for tok in TITLE_TOKEN_RE.findall(core_topic)
+        if len(tok) >= 4 and tok.lower() not in {"with", "from", "into", "about", "over", "under"}
+    ]
+    tokens = dedupe(tokens[:6])
+
+    guidance_lines = [
+        f"- The artifact MUST stay tightly centered on the exact topic: {raw}",
+        "- Do not backslide into a general biography or overview if the topic is narrower than a whole life or oeuvre.",
+        "- Prefer specific historical evidence over generic summary language.",
+    ]
+
+    if focus_year:
+        guidance_lines.extend(
+            [
+                f"- The year {focus_year} is jurisdictionally central. Treat it as the primary analytic frame.",
+                f"- Explain why {focus_year} matters specifically, not just how the broader figure or topic is generally understood.",
+                f"- Reference events, texts, debates, receptions, conditions, or correspondences specific to {focus_year} where support exists.",
+                f"- Avoid citing earlier or later works as if they directly describe {focus_year} unless you explicitly mark them as context.",
+            ]
+        )
+
+    guidance = "\n".join(guidance_lines)
+    return TopicProfile(
+        raw_topic=raw,
+        core_topic=core_topic or raw,
+        focus_year=focus_year,
+        focus_tokens=tokens,
+        guidance=guidance,
+    )
+
+
+# ------------------------------------------------------------------------------
+# PROMPTS
+# ------------------------------------------------------------------------------
 PROMPT = """\
 Produce a rigorous AlgorithmicGriot research synthesis on: {topic}
+
+TOPIC JURISDICTION:
+{topic_guidance}
 
 NON-NEGOTIABLE RULES:
 - No fluff
@@ -111,6 +177,12 @@ NON-NEGOTIABLE RULES:
 - Maintain a disciplined AlgorithmicGriot voice: high-precision, historically alert, rhetorically controlled
 - Do not append notes after metadata
 - Return ONE metadata block only, at the end
+
+QUALITY RULES:
+- The abstract must identify what is historically specific about the topic's exact scope
+- Do not turn a narrow topic into a generic overview
+- Distinguish context from direct evidence
+- If the topic includes a year, the body must make that year analytically meaningful
 
 BODY FOOTNOTE FORMAT:
 - Place markers directly after factual sentences: example.[^1]
@@ -131,6 +203,7 @@ METADATA RULES:
 - grok_ctx_reflection: non-empty string
 - quotes: non-empty JSON list of REAL direct quotes with attribution in the same string
 - adinkra: non-empty JSON list of strings
+- tags and key_themes must be conceptually meaningful, not just repetitions of the topic string
 - quotes MUST use this shape:
   ["\\"Quoted text\\" — Name"]
 
@@ -144,6 +217,9 @@ REBUILD_PROMPT = """\
 Your last response failed validation.
 
 Rewrite from scratch on: {topic}
+
+TOPIC JURISDICTION:
+{topic_guidance}
 
 YOU MUST RETURN THIS EXACT TOP-LEVEL SHAPE:
 {scaffold}
@@ -160,6 +236,7 @@ HARD RULES:
 - Every bibliography line must match a body footnote
 - quotes metadata must be non-empty and contain real direct quote(s) with attribution
 - Every critical metadata field must be non-empty
+- Do not generalize beyond the exact topic
 - If support is thin, say so plainly and narrow the claims
 - Return only the rewritten report and metadata
 """
@@ -168,6 +245,8 @@ REPAIR_PROMPT = """\
 Repair the draft below without changing its required top-level structure.
 
 TOPIC: {topic}
+TOPIC JURISDICTION:
+{topic_guidance}
 VALIDATION ERROR: {error}
 
 REQUIRED SCAFFOLD:
@@ -180,6 +259,7 @@ HARD RULES:
 - Fix body/bibliography alignment
 - Restore non-empty critical metadata fields
 - quotes metadata must be non-empty and contain real direct quote(s) with attribution
+- Narrow generic claims so the artifact stays aligned to the exact topic
 - If a claim cannot be supported, soften or remove it
 - Return only the repaired report and metadata
 
@@ -241,7 +321,7 @@ def dedupe(items: List[str]) -> List[str]:
     seen = set()
     out: List[str] = []
     for item in items:
-        val = item.strip()
+        val = str(item).strip()
         if val and val not in seen:
             seen.add(val)
             out.append(val)
@@ -250,7 +330,7 @@ def dedupe(items: List[str]) -> List[str]:
 
 def slug_terms(topic: str) -> List[str]:
     words = [w.lower() for w in re.findall(r"[A-Za-z0-9]+", topic)]
-    return dedupe(words[:5]) or ["research"]
+    return dedupe(words[:6]) or ["research"]
 
 
 def split_body_bib(body: str) -> Tuple[str, str]:
@@ -291,6 +371,25 @@ def split_paragraphs(text: str) -> List[str]:
     return [part.strip() for part in re.split(r"\n\s*\n", text.strip()) if part.strip()]
 
 
+def topic_token_hits(body: str, profile: TopicProfile) -> int:
+    text = body.lower()
+    hits = 0
+    for tok in profile.focus_tokens:
+        if re.search(rf"\b{re.escape(tok)}\b", text):
+            hits += 1
+    return hits
+
+
+def count_year_mentions(body: str, year: str) -> int:
+    return len(re.findall(rf"\b{re.escape(year)}\b", body))
+
+
+def generic_tag_set(tags: List[str], topic: str) -> bool:
+    base = set(slug_terms(topic))
+    normalized = {str(x).strip().lower() for x in tags if str(x).strip()}
+    return bool(normalized) and normalized.issubset(base)
+
+
 # ------------------------------------------------------------------------------
 # METADATA EXTRACTION / NORMALIZATION
 # ------------------------------------------------------------------------------
@@ -314,6 +413,43 @@ def repair_json(raw: str) -> Dict[str, Any]:
         return {}
 
 
+def extract_balanced_json_block(text: str) -> Tuple[str, str]:
+    """
+    Returns (json_candidate, trailing_text_after_json).
+    """
+    start = text.find("{")
+    if start == -1:
+        return "", text
+
+    depth = 0
+    in_string = False
+    escape = False
+
+    for i in range(start, len(text)):
+        ch = text[i]
+
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+
+        if ch == '"':
+            in_string = True
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:i + 1], text[i + 1:]
+
+    return "", text
+
+
 def extract_metadata(text: str) -> Tuple[str, Dict[str, Any], List[str]]:
     warnings: List[str] = []
     marker = "### METADATA"
@@ -324,13 +460,13 @@ def extract_metadata(text: str) -> Tuple[str, Dict[str, Any], List[str]]:
     body = text[:idx].strip()
     tail = text[idx + len(marker):].strip()
 
-    start = tail.find("{")
-    end = tail.rfind("}")
-    candidate = tail[start:end + 1] if start != -1 and end != -1 and end > start else ""
+    candidate, trailing = extract_balanced_json_block(tail)
     meta = repair_json(candidate)
 
     if not meta:
         warnings.append("Metadata JSON malformed or missing; normalization applied.")
+    if trailing.strip():
+        warnings.append("Trimmed trailing text after metadata JSON.")
 
     return body, meta, warnings
 
@@ -346,9 +482,35 @@ def infer_quote_from_body(body: str) -> List[str]:
     return dedupe(cleaned[:2])
 
 
+def extract_candidate_themes(body: str, topic: str) -> List[str]:
+    candidates: List[str] = []
+    body_lower = body.lower()
+
+    theme_map = [
+        ("historiography", ["historiography", "scholarly debate", "interpretation"]),
+        ("colonial_context", ["colonial", "empire", "imperial", "british rule"]),
+        ("political_theology", ["spiritual", "religious", "theology", "islam"]),
+        ("nationalism", ["nationalism", "nation", "statehood", "separatism"]),
+        ("elite_reception", ["reception", "legacy", "later scholars"]),
+        ("rhetorical_framing", ["narrative", "metaphor", "framing", "rhetorical"]),
+        ("identity_formation", ["identity", "community", "cultural unity"]),
+        ("material_conditions", ["material conditions", "actors", "events", "institutional"]),
+        ("intellectual_history", ["philosophical", "thought", "intellectual"]),
+        ("communal_politics", ["communal", "league", "jinnah", "partition"]),
+    ]
+
+    for theme, needles in theme_map:
+        if any(needle in body_lower for needle in needles):
+            candidates.append(theme)
+
+    tokens = [tok for tok in slug_terms(topic) if tok not in {"1938", "1947", "research"}]
+    candidates.extend(tokens)
+    return dedupe(candidates[:6])
+
+
 def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any]:
     meta = meta if isinstance(meta, dict) else {}
-    terms = slug_terms(topic)
+    fallback_terms = extract_candidate_themes(body, topic)
 
     title = str(meta.get("title", "")).strip() or topic.strip() or "Research"
     tags = meta.get("tags", [])
@@ -365,16 +527,21 @@ def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any
     if not isinstance(quotes, list):
         quotes = [str(quotes).strip()] if str(quotes).strip() else []
 
-    tags = dedupe([str(x).strip() for x in tags if str(x).strip()]) or terms[:3]
-    key_themes = dedupe([str(x).strip() for x in key_themes if str(x).strip()]) or terms[:3]
+    tags = dedupe([str(x).strip() for x in tags if str(x).strip()])
+    key_themes = dedupe([str(x).strip() for x in key_themes if str(x).strip()])
     adinkra = dedupe([str(x).strip() for x in adinkra if str(x).strip()]) or ["Sankofa"]
+
+    if len(tags) < MIN_TAGS or generic_tag_set(tags, topic):
+        tags = dedupe((tags + fallback_terms)[:6])
+    if len(key_themes) < MIN_KEY_THEMES or generic_tag_set(key_themes, topic):
+        key_themes = dedupe((key_themes + fallback_terms)[:6])
 
     clean_quotes = []
     for q in quotes:
         if not isinstance(q, str):
             continue
         s = q.strip()
-        if s and "—" in s:
+        if s and "—" in s and s.count('"') >= 2:
             clean_quotes.append(s)
 
     if not clean_quotes:
@@ -390,17 +557,18 @@ def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any
     grok_ctx_reflection = str(meta.get("grok_ctx_reflection", "")).strip()
     if not grok_ctx_reflection:
         grok_ctx_reflection = (
-            "Artifact built for retrieval stability, contradiction visibility, and source-linked analytical reuse."
+            "Artifact built for retrieval stability, contradiction visibility, topic-specific reasoning, "
+            "and source-linked analytical reuse."
         )
 
     return {
         "title": title,
-        "tags": tags,
-        "key_themes": key_themes,
+        "tags": tags[:6],
+        "key_themes": key_themes[:6],
         "bias_analysis": bias_analysis,
         "grok_ctx_reflection": grok_ctx_reflection,
         "quotes": dedupe(clean_quotes),
-        "adinkra": adinkra,
+        "adinkra": adinkra[:4],
     }
 
 
@@ -408,20 +576,12 @@ def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any
 # BIBLIOGRAPHY PARSING / RECOVERY
 # ------------------------------------------------------------------------------
 def parse_bibliography_entries(body: str) -> List[Tuple[str, str]]:
-    """
-    Recover bibliography entries even when the model wraps them across lines.
-
-    Accepted shapes:
-      [^1]: Author, *Title* ...
-           continuation...
-      [^2]: Institution, *Title* ...
-    """
     _, bib = split_body_bib(body)
     if not bib.strip():
         return []
 
     entries: List[Tuple[str, str]] = []
-    current_id: str | None = None
+    current_id: Optional[str] = None
     current_parts: List[str] = []
 
     for raw_line in bib.splitlines():
@@ -440,6 +600,9 @@ def parse_bibliography_entries(body: str) -> List[Tuple[str, str]]:
             seed = match.group(2).strip()
             current_parts = [seed] if seed else []
             continue
+
+        if stripped.startswith("### METADATA"):
+            break
 
         if current_id is not None:
             current_parts.append(stripped)
@@ -469,12 +632,6 @@ def rebuild_bibliography(body: str, entries: List[Tuple[str, str]]) -> str:
 
 
 def anchor_bibliography_refs_into_body(body: str) -> Tuple[str, List[str]]:
-    """
-    If the model produced bibliography entries but forgot inline footnote markers,
-    attach existing bibliography IDs to safe paragraph endpoints in the body.
-
-    This does not invent sources; it only repairs missing anchors.
-    """
     warnings: List[str] = []
     refs = set(body_refs(body))
     entries = parse_bibliography_entries(body)
@@ -501,7 +658,6 @@ def anchor_bibliography_refs_into_body(body: str) -> Tuple[str, List[str]]:
             anchored.append(para)
             continue
 
-        # Prefer anchoring to prose paragraphs, not headings.
         citation = f"[^{available_ids[used]}]"
         if re.search(r"\[\^\d+\]\s*$", stripped):
             anchored.append(para)
@@ -517,9 +673,7 @@ def anchor_bibliography_refs_into_body(body: str) -> Tuple[str, List[str]]:
         used += 1
 
     if used:
-        warnings.append(
-            f"Recovered {used} in-body citation anchor(s) from bibliography-only support."
-        )
+        warnings.append(f"Recovered {used} in-body citation anchor(s) from bibliography-only support.")
 
     rebuilt_main = "\n\n".join(anchored)
     rebuilt = rebuilt_main + "\n\n# 📚 BIBLIOGRAPHY\n" + bib.strip()
@@ -599,13 +753,13 @@ def sanitize_bibliography(body: str) -> Tuple[str, List[str]]:
 
     kept_lines = {f"[^{entry_id}]: {entry_text}" for entry_id, entry_text in entries}
 
-    # Report any original non-empty line that did not survive recovery.
     for raw in original_lines:
         stripped = raw.strip()
         if stripped.startswith("[^") and stripped not in kept_lines and not BIB_LINE_RE.match(stripped):
             warnings.append(f"Recovered wrapped bibliography line: {stripped[:120]}")
+        elif stripped.startswith("### METADATA"):
+            continue
         elif not stripped.startswith("[^"):
-            # Continuation lines are acceptable if attached; don't warn on them.
             continue
 
     if not entries:
@@ -618,7 +772,6 @@ def sanitize_bibliography(body: str) -> Tuple[str, List[str]]:
 def align_body_and_bib(body: str) -> Tuple[str, List[str]]:
     warnings: List[str] = []
 
-    # First try to recover missing body anchors from a valid bibliography.
     body, anchor_warnings = anchor_bibliography_refs_into_body(body)
     warnings.extend(anchor_warnings)
 
@@ -643,11 +796,34 @@ def align_body_and_bib(body: str) -> Tuple[str, List[str]]:
         warnings.append("Removed orphan body footnotes.")
 
     if good != b_ids:
-        kept_entries = [(entry_id, entry_text) for entry_id, entry_text in parse_bibliography_entries(body) if entry_id in good]
+        kept_entries = [
+            (entry_id, entry_text)
+            for entry_id, entry_text in parse_bibliography_entries(body)
+            if entry_id in good
+        ]
         body = rebuild_bibliography(body, kept_entries)
         warnings.append("Pruned uncited bibliography lines.")
 
     return clean_whitespace(body), dedupe(warnings)
+
+
+# ------------------------------------------------------------------------------
+# TOPIC FOCUS VALIDATION
+# ------------------------------------------------------------------------------
+def validate_topic_focus(body: str, profile: TopicProfile) -> Optional[str]:
+    if not body.strip():
+        return "Empty body"
+
+    hits = topic_token_hits(body, profile)
+    if profile.focus_tokens and hits == 0:
+        return "Topic drift: core topic tokens missing from body"
+
+    if profile.focus_year:
+        year_mentions = count_year_mentions(body, profile.focus_year)
+        if year_mentions < 2:
+            return f"Topic drift: year {profile.focus_year} is insufficiently centered"
+
+    return None
 
 
 # ------------------------------------------------------------------------------
@@ -661,7 +837,7 @@ class ValidationResult:
     distinct_citations: int = 0
 
 
-def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
+def validate(body: str, meta: Dict[str, Any], profile: TopicProfile) -> ValidationResult:
     warnings: List[str] = []
 
     if not body.strip():
@@ -670,6 +846,10 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
     for header in REQUIRED_HEADERS:
         if header not in body:
             return ValidationResult(False, f"Missing section: {header}")
+
+    focus_error = validate_topic_focus(body, profile)
+    if focus_error:
+        return ValidationResult(False, focus_error)
 
     refs = set(body_refs(body))
     b_ids = set(bib_ids(body))
@@ -700,13 +880,23 @@ def validate(body: str, meta: Dict[str, Any]) -> ValidationResult:
     quotes = meta.get("quotes", [])
     if not isinstance(quotes, list) or not quotes:
         return ValidationResult(False, "Metadata quotes invalid or empty", distinct_citations=len(refs))
-    if not all(isinstance(q, str) and "—" in q for q in quotes):
+    if not all(isinstance(q, str) and "—" in q and q.count('"') >= 2 for q in quotes):
         return ValidationResult(False, "Metadata quotes invalid or unattributed", distinct_citations=len(refs))
 
+    tags = meta.get("tags", [])
+    key_themes = meta.get("key_themes", [])
+    if not isinstance(tags, list) or len(tags) < MIN_TAGS:
+        return ValidationResult(False, "Metadata tags insufficient", distinct_citations=len(refs))
+    if not isinstance(key_themes, list) or len(key_themes) < MIN_KEY_THEMES:
+        return ValidationResult(False, "Metadata key_themes insufficient", distinct_citations=len(refs))
+
+    if generic_tag_set(tags, profile.raw_topic):
+        warnings.append("Tags were minimally differentiated from the topic string.")
+    if generic_tag_set(key_themes, profile.raw_topic):
+        warnings.append("Key themes were minimally differentiated from the topic string.")
+
     if len(refs) < TARGET_CITATIONS:
-        warnings.append(
-            f"Low citation density: {len(refs)} distinct citation(s); target is {TARGET_CITATIONS}."
-        )
+        warnings.append(f"Low citation density: {len(refs)} distinct citation(s); target is {TARGET_CITATIONS}.")
 
     return ValidationResult(True, "", dedupe(warnings), len(refs))
 
@@ -760,29 +950,40 @@ def serialize_validation(result: ValidationResult) -> str:
     )
 
 
-def attempt(syn: Synapse, topic: str, label: str, prompt: str) -> Tuple[str, Dict[str, Any], ValidationResult]:
-    save_debug(topic, f"{label}_prompt", prompt)
+def attempt(
+    syn: Synapse,
+    profile: TopicProfile,
+    label: str,
+    prompt: str,
+) -> Tuple[str, Dict[str, Any], ValidationResult]:
+    save_debug(profile.raw_topic, f"{label}_prompt", prompt)
     raw = syn.ask(prompt)
-    save_debug(topic, f"{label}_raw", raw)
+    save_debug(profile.raw_topic, f"{label}_raw", raw)
 
     body, meta, meta_warnings = extract_metadata(raw)
-    body, meta, pipeline_warnings = cleanup_pipeline(topic, body, meta)
+    body, meta, pipeline_warnings = cleanup_pipeline(profile.raw_topic, body, meta)
 
-    result = validate(body, meta)
+    result = validate(body, meta, profile)
     result.warnings = dedupe(meta_warnings + pipeline_warnings + result.warnings)
 
-    save_debug(topic, f"{label}_body", body)
-    save_debug(topic, f"{label}_meta", json.dumps(meta, indent=2, ensure_ascii=False))
-    save_debug(topic, f"{label}_validation", serialize_validation(result))
+    save_debug(profile.raw_topic, f"{label}_body", body)
+    save_debug(profile.raw_topic, f"{label}_meta", json.dumps(meta, indent=2, ensure_ascii=False))
+    save_debug(profile.raw_topic, f"{label}_validation", serialize_validation(result))
     return body, meta, result
 
 
 def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationResult]:
+    profile = make_topic_profile(topic)
+
     body1, meta1, res1 = attempt(
         syn,
-        topic,
+        profile,
         "attempt1_primary",
-        PROMPT.format(topic=topic, scaffold=HARD_SCAFFOLD),
+        PROMPT.format(
+            topic=profile.raw_topic,
+            topic_guidance=profile.guidance,
+            scaffold=HARD_SCAFFOLD,
+        ),
     )
     if res1.ok:
         return body1, meta1, res1
@@ -790,9 +991,13 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
 
     body2, meta2, res2 = attempt(
         syn,
-        topic,
+        profile,
         "attempt2_rebuild",
-        REBUILD_PROMPT.format(topic=topic, scaffold=HARD_SCAFFOLD),
+        REBUILD_PROMPT.format(
+            topic=profile.raw_topic,
+            topic_guidance=profile.guidance,
+            scaffold=HARD_SCAFFOLD,
+        ),
     )
     if res2.ok:
         return body2, meta2, res2
@@ -801,10 +1006,11 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
     repair_seed = body2 if len(body2.strip()) >= len(body1.strip()) else body1
     body3, meta3, res3 = attempt(
         syn,
-        topic,
+        profile,
         "attempt3_repair",
         REPAIR_PROMPT.format(
-            topic=topic,
+            topic=profile.raw_topic,
+            topic_guidance=profile.guidance,
             error=res2.error,
             draft=repair_seed,
             scaffold=HARD_SCAFFOLD,
@@ -817,7 +1023,7 @@ def generate(syn: Synapse, topic: str) -> Tuple[str, Dict[str, Any], ValidationR
     quote_seed = body3 if count_concrete_signals(body3) >= count_concrete_signals(repair_seed) else repair_seed
     body4, meta4, res4 = attempt(
         syn,
-        topic,
+        profile,
         "attempt4_quote_repair",
         QUOTE_REPAIR_PROMPT.format(draft=quote_seed),
     )
