@@ -1,5 +1,5 @@
 # ==============================================================================
-# ✶⌁✶ scholarly_dive.py — THE SCHOLARLY SYNTHESIS ENGINE v3.8.2 [QUOTE-LOCK]
+# ✶⌁✶ scholarly_dive.py — THE SCHOLARLY SYNTHESIS ENGINE v3.8.3 [ANCHOR-QUALITY]
 # ==============================================================================
 # ROLE: Lean synthesis client with fail-fast validation, citation integrity,
 #       metadata enforcement, topic-focus enforcement, unsupported-specificity
@@ -39,8 +39,8 @@ ARTIFACT_DIR = "war_council/_artifacts/scholarly_dive"
 DEBUG_DIR = Path("C:/Users/digitalscorpyun/projects_2026/avm/_debug/scholarly_dive")
 LA_TZ = ZoneInfo("America/Los_Angeles")
 
-VERSION = "v3.8.2"
-BANNER = f"✶⌁✶ SCHOLARLY DIVE {VERSION} [QUOTE-LOCK] ONLINE"
+VERSION = "v3.8.3"
+BANNER = f"✶⌁✶ SCHOLARLY DIVE {VERSION} [ANCHOR-QUALITY] ONLINE"
 
 TARGET_CITATIONS = 3
 MIN_REQUIRED_CITATIONS = 1
@@ -65,6 +65,28 @@ CRITICAL_META_KEYS = [
     "adinkra",
 ]
 
+WEAK_META_TOKENS = {
+    "a",
+    "an",
+    "and",
+    "analysis",
+    "america",
+    "american",
+    "case",
+    "event",
+    "history",
+    "modern",
+    "new",
+    "presidential",
+    "research",
+    "state",
+    "states",
+    "study",
+    "topic",
+    "united",
+    "year",
+}
+
 FOOTNOTE_REF_RE = re.compile(r"\[\^(\d+)\]")
 BIB_LINE_RE = re.compile(r"^\[\^(\d+)\]:\s+(.+)$")
 QUOTED_TEXT_RE = re.compile(r'[“"]([^"\n]{12,260})[”"]\s*[—-]\s*([^\n]+)')
@@ -75,6 +97,7 @@ ARCHIVE_CLAIM_RE = re.compile(r"\barchives?\b|\bhoused in\b|\bcollection\b", re.
 DATE_CLAIM_RE = re.compile(
     r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}\b"
 )
+YEAR_RE = re.compile(r"^(1[5-9]\d{2}|20\d{2})$")
 
 HARD_SCAFFOLD = """# Abstract
 
@@ -134,9 +157,52 @@ def normalize_topic(topic: str) -> str:
     return re.sub(r"\s+", " ", topic).strip()
 
 
+def is_meaningful_meta_token(token: str) -> bool:
+    lowered = token.strip().lower()
+    if not lowered:
+        return False
+    if YEAR_RE.match(lowered):
+        return False
+    if lowered in WEAK_META_TOKENS:
+        return False
+    if len(lowered) < 4:
+        return False
+    return True
+
+
+def normalize_meta_items(items: List[str], *, max_items: int = 6) -> List[str]:
+    out: List[str] = []
+    seen = set()
+
+    for raw in items:
+        item = str(raw).strip().lower()
+        item = re.sub(r"[\s\-]+", "_", item)
+        item = re.sub(r"[^a-z0-9_]", "", item)
+        item = re.sub(r"_+", "_", item).strip("_")
+        if not item:
+            continue
+        if YEAR_RE.match(item):
+            continue
+        parts = [p for p in item.split("_") if p]
+        if not parts:
+            continue
+        if len(parts) == 1 and not is_meaningful_meta_token(parts[0]):
+            continue
+        if all(part in WEAK_META_TOKENS for part in parts):
+            continue
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+        if len(out) >= max_items:
+            break
+
+    return out
+
+
 def slug_terms(topic: str) -> List[str]:
     words = [w.lower() for w in re.findall(r"[A-Za-z0-9]+", topic)]
-    return dedupe(words[:6]) or ["research"]
+    filtered = [w for w in words if is_meaningful_meta_token(w)]
+    return normalize_meta_items(filtered[:8]) or ["research_topic"]
 
 
 def make_topic_profile(topic: str) -> TopicProfile:
@@ -147,7 +213,7 @@ def make_topic_profile(topic: str) -> TopicProfile:
     tokens = [
         tok.lower()
         for tok in TITLE_TOKEN_RE.findall(core_topic)
-        if len(tok) >= 4 and tok.lower() not in {"with", "from", "into", "about", "over", "under"}
+        if is_meaningful_meta_token(tok)
     ]
     tokens = dedupe(tokens[:6])
 
@@ -212,6 +278,7 @@ QUALITY RULES:
 - Do not place quotations, commentary, or metadata fragments inside bibliography lines
 - Do not use exact page numbers, archival locations, exact speech dates, or exact document holdings unless directly citation-bound and essential
 - Every major prose section should contain at least one visible in-body footnote when support exists
+- Prefer named contradictions, historiographic splits, structural stakes, and material conditions over textbook recap
 
 BODY FOOTNOTE FORMAT:
 - Place markers directly after factual sentences: example.[^1]
@@ -226,13 +293,15 @@ BIBLIOGRAPHY FORMAT:
 
 METADATA RULES:
 - title: non-empty string
-- tags: non-empty JSON list of strings
-- key_themes: non-empty JSON list of strings
+- tags: non-empty JSON list of meaningful strings
+- key_themes: non-empty JSON list of meaningful strings
 - bias_analysis: non-empty string
 - grok_ctx_reflection: non-empty string
 - quotes: non-empty JSON list of REAL direct quotes with attribution in the same string
 - adinkra: non-empty JSON list of strings
 - tags and key_themes must be conceptually meaningful, not just repetitions of the topic string
+- Avoid weak metadata tokens like bare years, "united", "states", "history", or generic filler
+- Prefer analytical metadata such as "electoral_crisis", "racial_suppression", "elite_bargaining", "legitimacy_crisis"
 - quotes MUST use this shape:
   ["\\"Quoted text\\" — Name"]
 
@@ -268,6 +337,8 @@ HARD RULES:
 - Do not generalize beyond the exact topic
 - Do not use exact page numbers, archive claims, or exact dates unless support is tight
 - If support is thin, say so plainly and narrow the claims
+- Avoid weak metadata tokens like bare years, "united", "states", or generic filler
+- Prefer strong analytical metadata and differentiated key themes
 - Return only the rewritten report and metadata
 """
 
@@ -291,6 +362,7 @@ HARD RULES:
 - Restore non-empty critical metadata fields
 - quotes metadata must be non-empty and contain real direct quote(s) with attribution
 - Narrow generic claims so the artifact stays aligned to the exact topic
+- Replace weak metadata with more analytical and topic-specific metadata
 - If a claim cannot be supported, soften or remove it
 - Return only the repaired report and metadata
 
@@ -311,7 +383,8 @@ RULES:
 - Every quote must be a REAL direct quote with attribution in one string:
   "\\"Quoted text\\" — Name"
 - Do not invent quotations
-- If no quote is safely available, rewrite the draft so that one real quoted sentence is included and sourced
+- Prefer a short, high-signal quotation from the argument you are already making
+- If no safe quote is available, revise body language so one real quoted sentence with attribution is present
 - Return only the repaired report and metadata
 
 DRAFT:
@@ -540,30 +613,59 @@ def extract_candidate_themes(body: str, topic: str) -> List[str]:
     body_lower = body.lower()
 
     theme_map = [
-        ("historiography", ["historiography", "scholarly debate", "interpretation"]),
-        ("colonial_context", ["colonial", "empire", "imperial", "british rule"]),
-        ("political_theology", ["spiritual", "religious", "theology", "islam"]),
-        ("nationalism", ["nationalism", "nation", "statehood", "separatism"]),
-        ("elite_reception", ["reception", "legacy", "later scholars"]),
-        ("rhetorical_framing", ["narrative", "metaphor", "framing", "rhetorical"]),
+        ("historiography", ["historiography", "scholarly debate", "revisionist", "consensus"]),
+        ("colonial_context", ["colonial", "empire", "imperial", "settler"]),
+        ("political_theology", ["spiritual", "religious", "theology", "sacral"]),
+        ("nationalism", ["nationalism", "nation", "statehood", "national identity"]),
+        ("elite_bargaining", ["compromise", "brokered", "elite bargain", "negotiation"]),
+        ("legitimacy_crisis", ["legitimacy", "constitutional crisis", "contested", "disputed"]),
+        ("rhetorical_framing", ["narrative framing", "rhetorical", "semiotic", "myth"]),
         ("identity_formation", ["identity", "community", "cultural unity"]),
-        ("material_conditions", ["material conditions", "actors", "events", "institutional"]),
-        ("intellectual_history", ["philosophical", "thought", "intellectual"]),
-        ("communal_politics", ["communal", "league", "jinnah", "partition"]),
+        ("material_conditions", ["material conditions", "labor", "capital", "economic depression"]),
+        ("racial_suppression", ["jim crow", "black voters", "racial", "white supremacy", "disenfranchise"]),
+        ("electoral_controversy", ["electoral votes", "electoral commission", "ballot", "election dispute"]),
+        ("federal_power", ["federal authority", "federal troops", "federal oversight", "states' rights"]),
+        ("reconstruction_endgame", ["reconstruction", "compromise of 1877", "post-reconstruction"]),
     ]
 
     for theme, needles in theme_map:
         if any(needle in body_lower for needle in needles):
             candidates.append(theme)
 
-    tokens = [tok for tok in slug_terms(topic) if tok not in {"1938", "1947", "research"}]
-    candidates.extend(tokens)
-    return dedupe(candidates[:6])
+    candidates.extend(slug_terms(topic))
+    return normalize_meta_items(candidates[:10])
+
+
+def extract_candidate_tags(body: str, topic: str) -> List[str]:
+    body_lower = body.lower()
+    candidates: List[str] = []
+
+    tag_map = [
+        ("electoral_crisis", ["electoral commission", "disputed electoral", "electoral votes"]),
+        ("legitimacy_crisis", ["legitimacy", "constitutional crisis"]),
+        ("racial_suppression", ["jim crow", "black voter", "white league", "white supremacy", "disenfranchise"]),
+        ("elite_bargaining", ["compromise of 1877", "elite bargain", "brokered"]),
+        ("reconstruction", ["reconstruction"]),
+        ("federal_power", ["federal troops", "federal authority", "federal oversight"]),
+        ("historiography", ["historiography", "revisionist", "scholarship"]),
+        ("material_conditions", ["material conditions", "economic depression", "panic of 1873"]),
+        ("rhetorical_framing", ["narrative framing", "rhetorical", "semiotic"]),
+        ("democratic_legitimacy", ["democracy", "legitimacy", "electoral process"]),
+    ]
+
+    for tag, needles in tag_map:
+        if any(needle in body_lower for needle in needles):
+            candidates.append(tag)
+
+    candidates.extend(extract_candidate_themes(body, topic))
+    candidates.extend(slug_terms(topic))
+    return normalize_meta_items(candidates[:12])
 
 
 def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any]:
     meta = meta if isinstance(meta, dict) else {}
-    fallback_terms = extract_candidate_themes(body, topic)
+    candidate_tags = extract_candidate_tags(body, topic)
+    candidate_themes = extract_candidate_themes(body, topic)
 
     title = str(meta.get("title", "")).strip() or topic.strip() or "Research"
     tags = meta.get("tags", [])
@@ -580,14 +682,15 @@ def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any
     if not isinstance(quotes, list):
         quotes = [str(quotes).strip()] if str(quotes).strip() else []
 
-    tags = dedupe([str(x).strip() for x in tags if str(x).strip()])
-    key_themes = dedupe([str(x).strip() for x in key_themes if str(x).strip()])
+    tags = normalize_meta_items([str(x).strip() for x in tags if str(x).strip()], max_items=6)
+    key_themes = normalize_meta_items([str(x).strip() for x in key_themes if str(x).strip()], max_items=6)
     adinkra = dedupe([str(x).strip() for x in adinkra if str(x).strip()]) or ["Sankofa"]
 
     if len(tags) < MIN_TAGS or generic_tag_set(tags, topic):
-        tags = dedupe((tags + fallback_terms)[:6])
+        tags = normalize_meta_items(tags + candidate_tags, max_items=6)
+
     if len(key_themes) < MIN_KEY_THEMES or generic_tag_set(key_themes, topic):
-        key_themes = dedupe((key_themes + fallback_terms)[:6])
+        key_themes = normalize_meta_items(key_themes + candidate_themes, max_items=6)
 
     clean_quotes: List[str] = []
     for q in quotes:
@@ -598,13 +701,7 @@ def normalize_meta(meta: Dict[str, Any], topic: str, body: str) -> Dict[str, Any
             clean_quotes.append(s)
 
     if not clean_quotes:
-        inferred_quotes = infer_quote_from_body(body)
-        if inferred_quotes:
-            clean_quotes = inferred_quotes
-        else:
-            clean_quotes = [
-                f"\"{topic} requires disciplined evidence over narrative inflation.\" — AlgorithmicGriot"
-            ]
+        clean_quotes = infer_quote_from_body(body)
 
     bias_analysis = str(meta.get("bias_analysis", "")).strip()
     if not bias_analysis:
