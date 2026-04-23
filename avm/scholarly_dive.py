@@ -8,17 +8,18 @@ import json
 import os
 import re
 import sys
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 try:
     from zoneinfo import ZoneInfo
 except ImportError:
-    from backports.zoneinfo import ZoneInfo
+    try:
+        from backports.zoneinfo import ZoneInfo  # type: ignore
+    except ImportError:
+        ZoneInfo = None
 
-from vs_enc import VSEncOrchestrator
 from watsonx_client import WatsonXClient
 
 
@@ -184,7 +185,7 @@ def run():
         body, meta_block = raw.split("### METADATA", 1)
         try:
             meta = json.loads(meta_block.strip())
-        except:
+        except Exception:
             meta = {}
     else:
         body = raw
