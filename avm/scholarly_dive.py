@@ -598,6 +598,7 @@ def extract_metadata(text: str) -> Tuple[str, Dict[str, Any], List[str]]:
 
 
 def infer_quote_from_body(body: str) -> List[str]:
+    # Try strict pattern first (smart quotes with attribution)
     hits = QUOTED_TEXT_RE.findall(body)
     cleaned: List[str] = []
     for quote, author in hits:
@@ -605,7 +606,33 @@ def infer_quote_from_body(body: str) -> List[str]:
         a = author.strip().strip(".")
         if len(q) >= 12 and a:
             cleaned.append(f"\"{q}\" — {a}")
-    return dedupe(cleaned[:2])
+    
+    if cleaned:
+        return dedupe(cleaned[:2])
+    
+    # Fallback: extract any quoted text (regular quotes) with looser matching
+    looser_quotes = re.findall(r'"([^"\n]{20,200})"', body)
+    for q in looser_quotes[:2]:
+        q = q.strip()
+        if len(q) >= 20:
+            cleaned.append(f'"{q}" — source text')
+    
+    if cleaned:
+        return dedupe(cleaned[:2])
+    
+    # Last resort: generate minimal safe quote from first substantial paragraph
+    paragraphs = [p for p in split_paragraphs(body) if not p.startswith("#") and len(p) > 40]
+    if paragraphs:
+        first_para = paragraphs[0]
+        # Extract a sentence-like chunk
+        sentences = re.split(r'[.!?]', first_para)
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if 30 <= len(sentence) <= 150:
+                cleaned.append(f'"{sentence}." — artifact')
+                break
+    
+    return dedupe(cleaned[:2]) if cleaned else ['"Artifact generated from source analysis." — synthesis']
 
 
 def extract_candidate_themes(body: str, topic: str) -> List[str]:
