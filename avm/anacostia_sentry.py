@@ -347,4 +347,3 @@ def run_sentry_scan() -> dict:
 
 if __name__ == "__main__":
     run_sentry_scan()
-```
