@@ -1,24 +1,17 @@
 # ==============================================================================
-# ✶⌁✶ anacostia_sentry.py — THE SOVEREIGN INFRASTRUCTURE OBSERVER v1.2.0 [HARDENED]
+# ✶⌁✶ anacostia_sentry.py — THE SOVEREIGN INFRASTRUCTURE OBSERVER v1.2.1 [HARDENED]
 # ==============================================================================
 # ROLE: Automated Infrastructure Health Monitoring & Kernel Log Collection.
 # ENGINE: Deterministic Logic (Python 3.10+)
 # COMPLIANCE: WC-INF-2026-01-16-V028 / NORMALIZATION-LAW-V102
 # JURISDICTION: Anacostia Training Grounds — projects_2026 Sovereignty
 # ==============================================================================
-# PURPOSE:
-#   Collect actionable system health data:
-#   - Static system identity
-#   - CPU / RAM / battery pulse
-#   - Per-drive disk usage
-#   - Top CPU-consuming processes
-#   - Top RAM-consuming processes
-#   - Windows System event errors
-#   - Network adapter map, including ifIndex for TCP/IP bind failures
-#
-# NOTE:
-#   This version fixes the blind spot caused by psutil.disk_usage("/")
-#   by collecting all mounted filesystem drives on Windows.
+# v1.2.1 PATCH:
+#   - Excludes "System Idle Process" from CPU pressure reporting.
+#   - Excludes the active sentry Python process from top CPU/RAM offender lists.
+#   - Keeps per-drive disk reporting.
+#   - Keeps Windows event collection.
+#   - Keeps network adapter / interface mapping.
 # ==============================================================================
 
 import os
@@ -122,8 +115,17 @@ def get_health_metrics() -> dict:
     }
 
 
+def classify_disk_status(percent_used: float) -> str:
+    """Classify disk pressure."""
+    if percent_used >= DISK_CRITICAL:
+        return "critical"
+    if percent_used >= DISK_WARN:
+        return "warning"
+    return "normal"
+
+
 def get_disk_report() -> list:
-    """Collect per-drive disk utilization instead of ambiguous '/' usage."""
+    """Collect per-drive disk utilization."""
     disks = []
 
     for partition in psutil.disk_partitions(all=False):
@@ -159,24 +161,38 @@ def get_disk_report() -> list:
     return disks
 
 
-def classify_disk_status(percent_used: float) -> str:
-    """Classify disk pressure."""
-    if percent_used >= DISK_CRITICAL:
-        return "critical"
-    if percent_used >= DISK_WARN:
-        return "warning"
-    return "normal"
+def should_exclude_process(proc_name: str, proc_pid: int, current_pid: int) -> bool:
+    """Exclude false-signal processes from pressure reporting."""
+    if not proc_name:
+        return True
+
+    normalized = proc_name.lower().strip()
+
+    excluded_names = {
+        "system idle process"
+    }
+
+    if normalized in excluded_names:
+        return True
+
+    if proc_pid == current_pid:
+        return True
+
+    return False
 
 
 def get_top_processes(limit: int = 10) -> dict:
     """
     Gather top CPU and RAM consumers.
 
-    CPU requires a two-pass sampling ritual:
-    first call initializes counters, second call captures useful percentages.
+    Excludes:
+    - System Idle Process
+    - The current sentry Python process
     """
+    current_pid = os.getpid()
     processes = []
 
+    # First pass initializes CPU counters.
     for proc in psutil.process_iter(["pid", "name"]):
         try:
             proc.cpu_percent(interval=None)
@@ -188,11 +204,17 @@ def get_top_processes(limit: int = 10) -> dict:
     for proc in psutil.process_iter(["pid", "name", "username", "memory_info", "status", "create_time"]):
         try:
             info = proc.info
+            pid = info.get("pid")
+            name = info.get("name")
+
+            if should_exclude_process(name, pid, current_pid):
+                continue
+
             memory_mb = round(info["memory_info"].rss / (1024 ** 2), 2) if info.get("memory_info") else 0
 
             processes.append({
-                "pid": info.get("pid"),
-                "name": info.get("name"),
+                "pid": pid,
+                "name": name,
                 "username": info.get("username"),
                 "status": info.get("status"),
                 "cpu_percent": proc.cpu_percent(interval=None),
@@ -216,11 +238,7 @@ def get_top_processes(limit: int = 10) -> dict:
 
 
 def get_windows_events(limit: int = 10) -> Any:
-    """
-    Gather recent System log Error/Critical events using Get-WinEvent.
-
-    This replaces Get-EventLog because Get-WinEvent gives cleaner modern event data.
-    """
+    """Gather recent System log Error/Critical events."""
     ps_command = f"""
     Get-WinEvent -FilterHashtable @{{LogName='System'; Level=1,2}} -MaxEvents {limit} |
     Select-Object `
@@ -236,12 +254,7 @@ def get_windows_events(limit: int = 10) -> Any:
 
 
 def get_network_adapters() -> Any:
-    """
-    Map network interface indexes to adapter names.
-
-    This directly addresses errors like:
-    'The IPv6 TCP/IP interface with index 5 failed to bind to its provider.'
-    """
+    """Map network interface indexes to adapter names."""
     ps_command = """
     Get-NetAdapter |
     Select-Object `
@@ -259,7 +272,7 @@ def get_network_adapters() -> Any:
 
 
 def get_ip_configuration() -> Any:
-    """Collect useful IP interface state without flooding the report."""
+    """Collect IP interface state."""
     ps_command = """
     Get-NetIPInterface |
     Select-Object `
@@ -294,11 +307,12 @@ def get_alerts(report: dict) -> list:
     for disk in report.get("disk_report", []):
         percent = disk.get("percent_used")
         mount = disk.get("mountpoint")
+        free = disk.get("free_gb")
 
         if isinstance(percent, (int, float)) and percent >= DISK_CRITICAL:
-            alerts.append(f"Critical disk pressure on {mount}: {percent}% used")
+            alerts.append(f"Critical disk pressure on {mount}: {percent}% used, {free} GB free")
         elif isinstance(percent, (int, float)) and percent >= DISK_WARN:
-            alerts.append(f"Disk warning on {mount}: {percent}% used")
+            alerts.append(f"Disk warning on {mount}: {percent}% used, {free} GB free")
 
     return alerts
 
