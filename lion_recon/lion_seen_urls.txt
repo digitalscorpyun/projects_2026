@@ -36,6 +36,7 @@ https://andscape.com/features/doc-rivers-milwaukee-bucks-retirement-ownership-gi
 https://andscape.com/features/donald-trump-white-house-college-sports-roundtable-nil-labor-rights
 https://andscape.com/features/donovan-mitchell-cavaliers-diary-james-harden-nba-playoffs-louisville
 https://andscape.com/features/donovan-mitchell-cleveland-cavaliers-detroit-pistons-game-7-interview-coco-jones
+https://andscape.com/features/donovan-mitchell-interview-cavaliers-knicks-playoffs-sweep-reaction
 https://andscape.com/features/donovan-mitchell-playoff-diary-raptors-pistons-james-harden-jarrett-allen
 https://andscape.com/features/drake-iceman-album-review-maid-of-honour-habibti
 https://andscape.com/features/druski-comedy-skit-conservative-women
@@ -71,6 +72,8 @@ https://andscape.com/features/jesse-jackson-chicago-legacy-memorial-funeral-spor
 https://andscape.com/features/joe-mazzulla-celtics-nba-coach-of-year-boston-sports-scandals
 https://andscape.com/features/jonah-coleman-nfl-draft-running-back-washington-stockton-arizona-background-father
 https://andscape.com/features/jordan-brand-triangle-sneakers-release-date-info-design-colorways
+https://andscape.com/features/jordan-woolery-ucla-softball-wcws-black-representation-anthem-kneeling
+https://andscape.com/features/justin-jefferson-under-armour-cleats-camp-bayou-king-fashion
 https://andscape.com/features/kanye-west-concerts-sofi-wireless-canceled-controversy-racism-antisemitism
 https://andscape.com/features/kevin-durant-nba-europe-team-ownership-paris-saint-germain-africa
 https://andscape.com/features/kid-rock-rap-origin-detroit-black-politics-race-genre-evolution-country
@@ -624,6 +627,7 @@ https://ground.news/article/48m-settlement-reached-over-louisiana-traffic-stop-d
 https://ground.news/article/4b60b963-ee1d-4ac1-ba82-f7c9ed2b2870
 https://ground.news/article/4b947c25-6955-4cbc-8b84-916e4bc92d50
 https://ground.news/article/5-cities-in-the-us-that-pay-between-us5-000-and-us10-000-to-those-who-move-and-become-new-residents
+https://ground.news/article/5-dead-34-injured-in-i-95-crash-in-stafford-county-southbound-lanes-closed-delays-expected
 https://ground.news/article/507ac215-527e-4348-8bb5-512faf8259f1
 https://ground.news/article/52594254-6e6f-4331-bc95-b288a003a3c8
 https://ground.news/article/53d749a0-1d07-414f-880f-5902561a5c7d
@@ -635,6 +639,7 @@ https://ground.news/article/5831192f-314d-41e0-b6e7-7aa9d3dcf007
 https://ground.news/article/5b62bcd3-f0ab-4a12-92a1-6f978db54d58
 https://ground.news/article/5d326e37-34c4-40fe-ab91-6e0d865ebf63
 https://ground.news/article/5d3aad54-df62-4855-8bd6-c475b73d6444
+https://ground.news/article/5d4b5936-07fd-410e-b2c2-90b37f7c39b1
 https://ground.news/article/5d685cad-1232-41b1-8414-44d36214a802
 https://ground.news/article/6-people-found-dead-inside-a-boxcar-in-texas-officials-say
 https://ground.news/article/6-us-service-members-killed-in-refueling-plane-crash-identified_bfc0cb
@@ -659,10 +664,12 @@ https://ground.news/article/819e618d-1603-4293-9b35-07140d85a4a4
 https://ground.news/article/825431df-2cf6-4a9e-ad61-765ca1551071
 https://ground.news/article/82b9fd41-c5da-4395-805e-240b9963abfc
 https://ground.news/article/83de6acd-6409-4fd8-a979-31992fb36174
+https://ground.news/article/843b7aa7-c5be-4dc9-bcd3-470f57b9e266
 https://ground.news/article/844ec7ac-31fd-49c5-9577-0b6c43b0a3f9
 https://ground.news/article/8454ebfd-87e0-4198-ba64-826f8125d5ff
 https://ground.news/article/8659ed4e-db0e-442b-841e-c056e7eec164
 https://ground.news/article/893e4c4e-2757-4210-8ed7-7f44f6d1644c
+https://ground.news/article/8b4d93af-17c6-4d46-8ac0-044e65f002d1
 https://ground.news/article/8ba3041f-25f4-4fd8-953d-b086b64cda29
 https://ground.news/article/8c3a146c-73f9-4144-a8fa-829b66aa2a4a
 https://ground.news/article/8c488a53-769d-4e8e-b73a-8b0ba573dda1
@@ -679,6 +686,7 @@ https://ground.news/article/98-year-old-federal-judge-suspended-for-mental-fitne
 https://ground.news/article/988-launch-tied-to-drop-in-youth-suicides
 https://ground.news/article/98902436-29bf-4cfe-aea2-427f9a3b09ca
 https://ground.news/article/990a1545-bf77-4baf-98d0-c59b2a06cdae
+https://ground.news/article/99fe9612-e549-49b0-add3-40e52ac428a8
 https://ground.news/article/9a184b07-67c7-4eaa-9578-25a82430a00c
 https://ground.news/article/9a6f8174-be6f-4260-98c9-ef18ace91ade
 https://ground.news/article/9d5c9f4e-1d14-4c02-9693-d1ceb4304422
@@ -913,6 +921,7 @@ https://ground.news/article/bull-sharks-form-social-relationships-with-specific-
 https://ground.news/article/bulls-waive-guard-jaden-ivey-after-anti-lgbtq-comments-remarks-about-religion-on-instagram_b31dc5
 https://ground.news/article/byron-allen-to-buy-majority-stake-in-buzzfeed-for-120-million-shares-nearly-triple
 https://ground.news/article/ca35fbe0-1089-4453-aab5-9238c88cedbe
+https://ground.news/article/california-attorney-general-to-sue-23andme-over-2023-data-breach
 https://ground.news/article/california-championship-track-meet-forces-trans-athlete-to-share-top-podium-spot-with-biological-female
 https://ground.news/article/california-community-matches-all-time-record-march-heat-in-the-us
 https://ground.news/article/california-county-sues-meta-over-scam-ads
@@ -939,6 +948,7 @@ https://ground.news/article/carney-says-canada-a-reliable-oil-exporter-with-move
 https://ground.news/article/carney-says-canada-not-taking-notes-from-americans-as-it-prepares-for-trade-talks
 https://ground.news/article/cash-strapped-us-postal-service-suspends-contributions-to-pension-plan_eed7dc
 https://ground.news/article/cba36d8c-4613-4d69-903f-a6a4de4e764f
+https://ground.news/article/cbs-news-leader-bari-weiss-replaces-executive-producer-at-60-minutes
 https://ground.news/article/cbss-maga-aligned-boss-gets-blazing-public-putdown-from-own-reporter
 https://ground.news/article/ccfffe31-4c37-48ec-aece-4bcfe973116f
 https://ground.news/article/ce40b356-ac82-4847-a954-b356424a5990
@@ -1011,6 +1021,7 @@ https://ground.news/article/colombias-petro-under-criminal-investigation-in-us-n
 https://ground.news/article/colorado-pileup-involving-more-than-75-crashed-vehicles-on-snowy-eastbound-i-70-results-in-major-closure_e223be
 https://ground.news/article/colorado-rep-boebert-defies-trump-to-back-massie-in-primary
 https://ground.news/article/colorados-democratic-governor-will-let-trump-ally-tina-peters-out-of-prison-early
+https://ground.news/article/columbus-circle-fountain-restored-with-flowing-water-after-nearly-2-decades
 https://ground.news/article/columbus-statue-baltimore-dumped-has-found-a-pedestal-in-trumps-washington
 https://ground.news/article/companies-name-ai-as-top-reason-for-job-cuts-for-second-straight-month-analysis
 https://ground.news/article/companies-scramble-for-tariff-refunds-as-us-readies-claim-process
@@ -1040,6 +1051,7 @@ https://ground.news/article/could-trump-follow-through-on-his-threats-to-quit-na
 https://ground.news/article/court-affirms-montanas-constitutional-amendment-to-protect-abortion
 https://ground.news/article/court-orders-dc-judge-to-end-criminal-contempt-inquiry-into-trump-officials-involved-in-deportation-flights
 https://ground.news/article/court-reinstates-deportation-proceedings-against-pro-palestinian-student-mohsen-mahdawi
+https://ground.news/article/crews-recover-the-remains-of-6-of-the-9-workers-missing-after-washington-state-chemical-tank-rupture
 https://ground.news/article/cruise-line-ordered-to-pay-300-000-after-serving-passenger-14-shots-of-tequila-in-one-day_ba2f34
 https://ground.news/article/cruise-ship-passenger-making-best-of-quarantine-in-us-following-hantavirus-outbreak_66b738
 https://ground.news/article/crypto-exchange-coinbase-to-cut-about-14-of-workforce_491cae
@@ -1066,6 +1078,7 @@ https://ground.news/article/debris-from-hurricane-helene-is-helping-fuel-georgia
 https://ground.news/article/decline-in-migratory-fish-populations-prompts-fight-for-protection_5d08bd
 https://ground.news/article/defiant-alex-jones-makes-startling-vow-in-final-infowars-broadcast-the-real-war-begins-now
 https://ground.news/article/defying-protocol-trump-relays-details-of-private-conversation-with-king-charles-iii
+https://ground.news/article/dell-stock-skyrockets-32-heads-for-best-day-ever-as-ai-server-revenue-soars
 https://ground.news/article/delta-cuts-growth-plans-as-fuel-costs-rise-refinery-adds-300-million
 https://ground.news/article/democrat-gene-wu-can-keep-house-seat-texas-supreme-court-rules
 https://ground.news/article/democrat-johnny-garcia-wins-texas-house-primary-after-rivals-antisemitic-comments-drew-national-rebukes
@@ -1090,6 +1103,7 @@ https://ground.news/article/departing-us-still-owes-money-says-who-chief_d670cb
 https://ground.news/article/desantis-says-alligator-alcatraz-immigration-detention-center-always-was-meant-to-be-temporary
 https://ground.news/article/desantis-signs-student-athletics-bills-boosting-high-school-sports-in-jacksonville-approves-nine-other-bills-in-tallahassee
 https://ground.news/article/descendants-of-choctaw-code-talkers-gather-in-fort-worth-for-historical-marker-unveiling
+https://ground.news/article/despite-scrutiny-special-education-money-flows-to-for-profit-residential-treatment-centers
 https://ground.news/article/despite-state-bans-and-restrictions-the-number-of-abortions-in-the-us-holds-steady
 https://ground.news/article/detained-immigrant-children-still-face-concerning-conditions-at-texas-facility-lawyers-say_7f9ec5
 https://ground.news/article/dhs-funding-lapse-is-now-the-longest-government-shutdown-in-us-history
@@ -1248,8 +1262,10 @@ https://ground.news/article/federal-investigation-opened-into-smith-college-over
 https://ground.news/article/federal-judge-blocks-nexstar-tegna-tv-station-merger-until-antitrust-lawsuit-is-settled_60d112
 https://ground.news/article/federal-judge-blocks-us-sanctions-against-un-expert-on-palestinian-territories_a188db
 https://ground.news/article/federal-judge-dismisses-tennessee-criminal-case-against-kilmar-abrego-garcia
+https://ground.news/article/federal-judge-refuses-to-block-trump-order-to-create-federal-voter-list-and-limit-mail-voting_bcb6c9
 https://ground.news/article/federal-judge-releases-alleged-jeffrey-epstein-suicide-note_ad4d51
 https://ground.news/article/federal-judge-to-consider-maine-challenge-to-doj-voter-data-lawsuit
+https://ground.news/article/federal-judge-upholds-constitutionality-of-nitrogen-gas-executions_6b321e
 https://ground.news/article/federal-judges-say-white-house-ballroom-construction-can-continue-for-now
 https://ground.news/article/federal-judges-try-keeping-race-based-congressional-maps-alive-despite-supreme-court-ruling
 https://ground.news/article/federal-officials-warn-kansas-schools-over-gender-policy-violations
@@ -1293,6 +1309,7 @@ https://ground.news/article/former-fbi-director-james-comey-says-he-has-complete
 https://ground.news/article/former-fedex-driver-pleads-guilty-to-killing-7-year-old-girl-after-making-delivery-at-her-texas-home_c9a883
 https://ground.news/article/former-hawks-executive-jones-sentenced-to-over-3-years-in-prison-for-embezzling-37m-from-team
 https://ground.news/article/former-idaho-gov-dirk-kempthorne-dies-at-72
+https://ground.news/article/former-iowa-superintendent-to-be-sentenced-for-claiming-to-be-a-us-citizen-before-likely-deportation
 https://ground.news/article/former-jeffrey-epstein-assistant-tells-house-oversight-committee-he-abused-her-for-years_613ed6
 https://ground.news/article/former-nba-player-and-coach-damon-jones-pleads-guilty-to-selling-gamblers-inside-information
 https://ground.news/article/former-newsom-aide-pleads-guilty-to-felony-fraud-tax-charges-in-alleged-scheme-to-steal-becerra-campaign-funds
@@ -1328,6 +1345,7 @@ https://ground.news/article/gates-foundation-says-it-has-opened-external-review-
 https://ground.news/article/gavin-newsoms-california-funds-radical-islamists-at-cair-with-taxpayer-dollars
 https://ground.news/article/gaza-a-sandstorm-compounding-the-tragedy-of-the-survivors-of-the-genocide-in-the-displacement-camps
 https://ground.news/article/gaza-doctors-under-attack-team-attack-bbc-after-winning-bafta
+https://ground.news/article/gaza-mourns-10-killed-in-eid-strikes-as-netanyahu-vows-wider-control-of-the-strip
 https://ground.news/article/gen-z-anger-toward-ai-surges-even-as-adoptions-holds-steady-gallup-finds_737dee
 https://ground.news/article/general-motors-to-pay-12m-to-settle-california-driver-data-probe
 https://ground.news/article/georgia-lawmakers-pass-a-bill-that-advocates-fear-will-land-homeless-people-in-jail
@@ -1423,6 +1441,8 @@ https://ground.news/article/hung-cao-said-the-military-should-be-filled-with-alp
 https://ground.news/article/hungary-shared-intelligence-with-iran-after-2024-hezbollah-pager-incident
 https://ground.news/article/husband-of-woman-missing-in-bahamas-has-been-released-from-police-custody_ef3224
 https://ground.news/article/hyundai-to-recall-over-421-000-us-vehicles-over-software-brake-issue-nhtsa-says
+https://ground.news/article/ibm-to-invest-10-billion-for-large-scale-quantum-computer-by-2029
+https://ground.news/article/ice-agent-charged-in-minneapolis-metro-surge-shooting-arrested-in-texas
 https://ground.news/article/ice-agent-who-shot-renee-good-wasnt-cleared-of-all-charges-we-set-the-record-straight
 https://ground.news/article/ice-agents-will-be-stationed-outside-marine-corps-graduation-events-in-south-carolina
 https://ground.news/article/ice-arrested-more-than-800-people-after-tips-from-us-airport-security-agency
@@ -1433,6 +1453,7 @@ https://ground.news/article/ice-went-on-a-hiring-spree-sterling-credentials-were
 https://ground.news/article/ichiro-suzukis-statue-unveiling-has-mishap-as-bat-snaps-during-ceremony
 https://ground.news/article/idf-closes-in-on-bint-jbeil-the-fall-of-hezbollahs-most-symbolic-city
 https://ground.news/article/idf-kills-intelligence-heads-of-iranian-emergency-command-in-tehran-strike_c8641d
+https://ground.news/article/idf-strikes-150-hezbollah-targets-in-lebanon
 https://ground.news/article/iea-announces-record-400-million-barrel-release-of-oil-to-address-iran-war-supply-disruption_d1e20c
 https://ground.news/article/ilya-sutskever-testifies-he-holds-7-billion-openai-stakesecond-new-billionaire-revealed-in-musk-altman-trial_1127de
 https://ground.news/article/im-concerned-about-the-white-house-fight-joe-rogan-raises-major-concerns-about-white-house-ufc-card-and-its-impact-on-fighters
@@ -1573,6 +1594,7 @@ https://ground.news/article/judge-ends-federal-oversight-of-special-education-in
 https://ground.news/article/judge-orders-deportation-of-nyc-council-employee-detained-by-ice
 https://ground.news/article/judge-orders-mental-health-evaluation-for-the-woman-charged-with-the-attempted-murder-of-rihanna
 https://ground.news/article/judge-orders-pause-on-ice-detention-center-construction-in-maryland
+https://ground.news/article/judge-permanently-blocks-manhattan-project-radioactive-waste-from-wayne-disposal-landfill_60ce34
 https://ground.news/article/judge-rejects-no-jail-plea-in-case-of-man-who-plowed-into-la-county-deputy-recruits
 https://ground.news/article/judge-rejects-plea-agreement-in-case-of-missing-navajo-elder-ella-mae-begay
 https://ground.news/article/judge-revokes-us-citizenship-of-chinese-couple
@@ -1772,6 +1794,7 @@ https://ground.news/article/missouri-judge-strikes-ballot-summary-for-trump-back
 https://ground.news/article/missouri-man-arrested-charged-with-manufacturing-explosives_089655
 https://ground.news/article/missouris-new-us-house-map-goes-to-court-while-louisiana-and-south-carolina-consider-redistricting_37afd5
 https://ground.news/article/mit-georgia-tech-build-first-3d-model-of-mosquito-flight_2823a7
+https://ground.news/article/mlb-owners-propose-a-salary-cap-for-the-first-time-since-baseballs-1994-95-strike
 https://ground.news/article/mobile-home-legislation-in-arizona-target-utility-costs-abandonment-rules-and-manager-training_c72405
 https://ground.news/article/more-americans-doubt-vaccines-than-trust-them-poll-finds_1d1caf
 https://ground.news/article/more-talks-to-avert-lirr-strike-set-for-thursday-as-no-deal-is-reached_f6155b
@@ -1883,6 +1906,7 @@ https://ground.news/article/officer-improperly-canceled-visa-of-harvard-scholar-
 https://ground.news/article/offshore-wind-project-targeted-by-trump-administration-starts-sending-power-to-the-new-england-grid_0184fe
 https://ground.news/article/offshore-wind-project-targeted-by-trump-administration-starts-sending-power-to-the-new-england-grid_8ef1b3
 https://ground.news/article/ohio-data-center-tax-break-cost-1-billion-more-than-expected-in-2025-signal-ohio
+https://ground.news/article/ohio-suspends-data-center-tax-break-as-tech-firms-face-pressure-to-pay-the-cost-to-power-ai_be6562
 https://ground.news/article/ohio-woman-accused-of-illegally-voting-as-a-noncitizen-acquitted-signal-cleveland
 https://ground.news/article/oil-price-falls-as-iran-says-strait-of-hormuz-completely-open_2f466c
 https://ground.news/article/oil-prices-climb-and-global-markets-decline-as-us-prepares-for-blockade-of-irans-ports_fd7daf
@@ -1915,6 +1939,7 @@ https://ground.news/article/oregon-voters-decide-whether-to-boost-their-gas-tax-
 https://ground.news/article/oscar-winner-sean-penn-in-kyiv-ukrainian-official-to-afp
 https://ground.news/article/oscars-tv-audience-shrinks-9-in-us-from-last-year
 https://ground.news/article/oslo-patient-likely-cured-of-hiv-after-brothers-stem-cell-transplant_c87a00
+https://ground.news/article/outrage-as-pregnant-ghanaian-mother-of-disabled-child-reportedly-locked-up-at-us-airport
 https://ground.news/article/overheating-chemicals-tank-in-california-no-longer-at-risk-of-exploding-fire-officials-say
 https://ground.news/article/oversight-chairman-comer-launches-congressional-probe-into-insider-trading-on-kalshi-polymarket_e5016a
 https://ground.news/article/pa-county-jails-earn-millions-of-dollars-detaining-immigrants-for-ice
@@ -1923,7 +1948,9 @@ https://ground.news/article/palestine-action-supporters-arrested-as-londons-met-
 https://ground.news/article/palestinian-actor-says-he-cant-attend-oscars-because-of-us-travel-ban_4a48da
 https://ground.news/article/palestinian-killed-in-west-bank-as-violence-surges-during-iran-war
 https://ground.news/article/palestinian-man-who-donated-a-kidney-in-2023-may-be-ineligible-for-refugee-claim
+https://ground.news/article/pam-bondi-admits-to-redaction-errors-in-epstein-files-blames-successor_2824ff
 https://ground.news/article/pam-bondi-moves-to-military-base-amid-security-threats-sources
+https://ground.news/article/pam-bondi-to-face-closed-door-questioning-from-house-lawmakers-over-epstein-files
 https://ground.news/article/partner-held-in-zanzibar-after-american-influencer-ashly-robinson-dies-under-mysterious-circumstances_d963ef
 https://ground.news/article/paxton-makes-his-final-pitch-in-texas-us-senate-race-against-cornyn-buoyed-by-trumps-endorsement
 https://ground.news/article/paxton-talarico-launch-texas-senate-ads-as-general-election-begins_306f8b
@@ -1966,6 +1993,7 @@ https://ground.news/article/police-arrest-made-in-mall-of-louisiana-shooting-one
 https://ground.news/article/police-have-identified-the-gunman-who-killed-eight-children-in-louisiana-in-the-deadliest-us-mass-shooting-since-2024_5d381f
 https://ground.news/article/police-man-fatally-shot-woman-before-killing-himself-in-annandale-home_00e95c
 https://ground.news/article/police-pursuits-kill-8-across-us-in-less-than-a-week_64463c
+https://ground.news/article/police-respond-to-swatting-attempt-at-justice-amy-coney-barretts-home
 https://ground.news/article/police-to-release-video-from-tiger-woods-latest-rollover-crash
 https://ground.news/article/police-used-ai-facial-recognition-to-arrest-a-tennessee-woman-for-crimes-committed-in-a-state-she-says-shes-never-visited
 https://ground.news/article/police-were-searching-for-teens-behind-san-diego-mosque-shooting-before-the-bloodshed-began_880a02
@@ -2025,6 +2053,7 @@ https://ground.news/article/rappers-urge-supreme-court-to-intervene-in-texas-exe
 https://ground.news/article/read-the-full-transcript-of-howard-lutnicks-testimony-about-jeffrey-epstein
 https://ground.news/article/recall-impacts-over-31-million-eye-drop-products-distributed-nationwide-fda
 https://ground.news/article/recent-inflation-data-was-bad-news-feds-goolsbee-says
+https://ground.news/article/recent-survivors-of-us-boat-strikes-havent-been-found-bringing-overall-death-toll-to-199_1af02b
 https://ground.news/article/red-lists-of-endangered-species-not-up-to-date
 https://ground.news/article/reddit-ceo-says-platform-is-exploring-face-id-to-fight-bots_73d558
 https://ground.news/article/reddit-reports-69-jump-in-revenue-topping-analyst-estimates
@@ -2060,6 +2089,7 @@ https://ground.news/article/republican-senator-proposes-to-widen-us-ban-on-chine
 https://ground.news/article/republicans-in-congress-push-for-trumps-white-house-ballroom-after-shooting-at-media-dinner_29798e
 https://ground.news/article/republicans-plan-big-spending-to-keep-ohios-senate-seat-a-bribery-scandal-adds-to-their-challenges
 https://ground.news/article/republicans-resist-calls-for-iran-war-hearings-creating-a-new-standoff-with-democrats
+https://ground.news/article/rescuers-are-trying-to-reach-4-climbers-who-fell-on-alaskas-mount-mckinley-north-americas-tallest-peak_f5fa88
 https://ground.news/article/researchers-build-laser-that-controls-sound-particles-for-jam-proof-navigation
 https://ground.news/article/researchers-expose-darksword-an-iphone-exploit-chain-targeting-millions-of-devices_06d0b5
 https://ground.news/article/researchers-reclassify-300-million-year-old-octopus-fossil-as-nautiloid-relative
@@ -2175,6 +2205,7 @@ https://ground.news/article/ship-operator-and-employee-are-charged-in-crash-that
 https://ground.news/article/shooting-at-lake-near-oklahoma-city-sends-at-least-12-people-to-hospitals
 https://ground.news/article/shooting-spree-suspect-found-dead-in-dekalb-county-jail
 https://ground.news/article/should-you-cancel-your-cruise-after-the-hantavirus-outbreak
+https://ground.news/article/shrey-parikh-wins-2026-scripps-national-spelling-bee-in-spell-off
 https://ground.news/article/singer-d4vd-appears-in-court-waives-may-hearing-in-teen-murder-case
 https://ground.news/article/singer-d4vd-found-with-significant-amount-of-child-sex-abuse-images-prosecutors
 https://ground.news/article/single-gen-z-women-outpace-gen-z-men-to-homeownership-despite-overall-decline-in-first-time-buyers
@@ -2194,6 +2225,7 @@ https://ground.news/article/soros-funds-supporting-slavery-reparations-campaign
 https://ground.news/article/sources-fbi-revs-up-probe-of-fmr-cia-chief-over-russia-report
 https://ground.news/article/sources-iheartmedia-is-in-preliminary-talks-about-a-possible-merger-with-siriusxm-the-combined-company-would-have-more-than-12b-in-sales
 https://ground.news/article/sources-iranian-elementary-school-was-on-a-us-target-list
+https://ground.news/article/south-carolina-democrats-expected-to-celebrate-after-failure-of-trump-backed-redistricting-push
 https://ground.news/article/south-carolina-governor-unlikely-to-call-special-session-for-congressional-redistricting_fa881e
 https://ground.news/article/south-carolina-house-approves-a-new-congressional-map-intended-to-give-gop-all-7-seats-bill-heads-to-senate-soon_976cb2
 https://ground.news/article/south-carolina-senate-protects-nearly-all-monuments-and-bans-adding-qr-codes-to-statues
@@ -2238,6 +2270,7 @@ https://ground.news/article/study-finds-ai-weather-models-use-21-times-less-ener
 https://ground.news/article/study-finds-bow-and-arrow-swept-western-north-america-1-400-years-ago_b14349
 https://ground.news/article/study-finds-three-distinct-types-of-black-hole-mergers
 https://ground.news/article/study-mental-disorders-have-doubled-globally-since-1990
+https://ground.news/article/study-mosquitoes-can-learn-to-like-deet_aa6e7a
 https://ground.news/article/study-projects-atlantic-current-system-to-weaken-51-by-2100_e2f782
 https://ground.news/article/study-reveal-antarctic-ice-melt-feeds-itself-accelerating-sea-level-rise_2db142
 https://ground.news/article/study-says-trees-counter-half-the-worlds-urban-heating-but-not-in-the-places-that-need-it-most
@@ -2306,6 +2339,7 @@ https://ground.news/article/tennessee-house-speaker-sexton-removes-democrats-fro
 https://ground.news/article/tennessee-man-jailed-over-charlie-kirk-post-wins-835-000-settlement_0fd241
 https://ground.news/article/tennessee-poised-to-vote-on-new-us-house-map-sought-by-trump-that-carves-up-memphis
 https://ground.news/article/tennessee-republicans-pass-new-map-erasing-majority-black-us-house-district_1b7139
+https://ground.news/article/terry-rozier-allegedly-accepted-100-000-bribe-to-exit-nba-game-early-in-latest-gambling-saga-twist
 https://ground.news/article/tesla-raises-prices-of-model-y-cars-in-the-us-for-the-first-time-in-two-years
 https://ground.news/article/tesla-tsla-q1-2026-deliveries-miss-expectations-at-358-000-builds-50-000-excess-vehicles
 https://ground.news/article/texas-county-pauses-data-center-construction-in-rural-areas
@@ -2751,6 +2785,7 @@ https://ground.news/article/us-judge-blocks-trump-administration-actions-stymiei
 https://ground.news/article/us-judge-blocks-trump-administration-from-detaining-thousands-of-refugees
 https://ground.news/article/us-judge-pauses-termination-of-deportation-protections-for-some-somali-immigrants
 https://ground.news/article/us-judge-revives-union-contract-for-320-000-workers-at-veterans-agency_516c9d
+https://ground.news/article/us-judge-temporarily-blocks-trumps-18-billion-weaponization-fund
 https://ground.news/article/us-justice-department-adds-former-trump-lawyer-to-probe-of-former-cia-director-cnn-reports_3c3d94
 https://ground.news/article/us-justice-department-can-use-military-lawyers-to-prosecute-civilians-judge-rules
 https://ground.news/article/us-justice-department-opens-probe-into-nfl-over-anticompetitive-practices-wsj-reports
@@ -3509,6 +3544,14 @@ https://newsone.com/6861694/south-carolina-redistricting-effort-stalls-state-sen
 https://newsone.com/6861726/doj-criminal-investigation-e-jean-carroll-trump-sexual-assault
 https://newsone.com/6861746/renewed-strikes-between-us-iran-spike-oil-prices
 https://newsone.com/6861759/new-york-california-tax-anti-weaponization-fund
+https://newsone.com/6861766/naomi-osaka-taylor-townsend-open-letter
+https://newsone.com/6861770/scotus-brian-flores-fight-justice-nfl
+https://newsone.com/6861776/former-federal-investigation-trump-irs-immunity-anti-weaponization-fund
+https://newsone.com/6861777/black-artists-are-pulling-out-of-trumps-freedom-250-concert
+https://newsone.com/6861800/naacp-asking-black-teenagers-save-black-voting-rights
+https://newsone.com/6861828/trump-refiles-10-billion-lawsuit-against-wall-street-journal-epstein-reporting
+https://newsone.com/6861863/scotus-terry-pitchford-mississippi-black-man-death-sentence-jury-selection-racist
+https://newsone.com/6861875/federal-judge-issues-block-on-trumps-anti-weaponization-fund
 https://play.google.com/store/apps/details?id=com.checkitt&referrer=utm_source%3Dunknown
 https://thegrio.com/2026/03/06/grambling-state-university-secures-trademark-for-iconic-logo
 https://thegrio.com/2026/03/06/netflix-pulls-investment-meghan-markle-as-ever
@@ -4585,9 +4628,24 @@ https://thegrio.com/2026/05/28/ben-crump-families-of-two-black-infants-allege-de
 https://thegrio.com/2026/05/28/cynthia-erivo-singapore-attack-backlash-oscar-campaign-wicked
 https://thegrio.com/2026/05/28/gayle-king-ex-husband-apology
 https://thegrio.com/2026/05/28/gayle-king-oprah-rumors
+https://thegrio.com/2026/05/28/idris-elba-is-not-in-the-race-to-play-james-bond
+https://thegrio.com/2026/05/28/inflation-mortgage-rates-rise-black-households-under-trump-economy
+https://thegrio.com/2026/05/28/laverne-cox-retells-harrowing-story-of-being-left-in-an-orphanage-in-upcoming-memoir
 https://thegrio.com/2026/05/28/machel-montano-has-been-doing-soca-like-ah-boss-since-age-7-his-new-documentary-proves-it
+https://thegrio.com/2026/05/28/supreme-court-mississippi-death-row-jury-bias
+https://thegrio.com/2026/05/28/tennessee-school-district-reverses-ban-on-alex-haley-roots-novel
 https://thegrio.com/2026/05/28/tia-mowry-new-boyfriend-cabo-getaway
+https://thegrio.com/2026/05/28/uk-woman-convicted-in-1978-death-of-her-5-year-old-stepdaughter-after-cold-case-reopened
+https://thegrio.com/2026/05/28/why-are-black-womens-friendships-the-internets-favorite-target
 https://thegrio.com/2026/05/28/zohran-mamdani-muslim-mayor-nyc-community-reaction-meta
+https://thegrio.com/2026/05/29/byron-allen-the-titans-media-power-list
+https://thegrio.com/2026/05/29/byron-allen-time-buy-cbs-late-night-profit
+https://thegrio.com/2026/05/29/in-score-kennedy-ryan-writes-a-world-where-black-womens-mental-health-is-taken-seriously
+https://thegrio.com/2026/05/29/judge-blocks-trump-1-7b-slush-fund
+https://thegrio.com/2026/05/29/patti-labelle-lady-marmalade-meaning-reaction
+https://thegrio.com/2026/05/29/sharell-canty-opium-nightclub-atlanta-murder
+https://thegrio.com/2026/05/29/trump-250-bill-treasury-design-congress
+https://thegrio.com/2026/05/29/who-is-performing-at-freedom-250s-great-american-state-fair
 https://www.artificialintelligence-news.com/news/5-best-practices-to-secure-ai-systems
 https://www.artificialintelligence-news.com/news/5-top-cloud-migration-software-for-infrastructure-as-code-iac
 https://www.artificialintelligence-news.com/news/a-guide-to-apis-and-mcps-and-mcp-gateways
@@ -4611,6 +4669,7 @@ https://www.artificialintelligence-news.com/news/alibaba-zhenwu-m890-ai-agent-ch
 https://www.artificialintelligence-news.com/news/amazon-alexa-for-shopping-rufus-ai-assistant
 https://www.artificialintelligence-news.com/news/anthropic-keeps-new-ai-model-private-after-it-finds-thousands-of-external-vulnerabilities
 https://www.artificialintelligence-news.com/news/anthropic-mythos-ai-cybersecurity-white-house
+https://www.artificialintelligence-news.com/news/anthropic-releases-claude-opus-4-8-news
 https://www.artificialintelligence-news.com/news/anthropic-uk-expansion-london-pentagon
 https://www.artificialintelligence-news.com/news/as-ai-agents-take-on-more-tasks-governance-becomes-a-priority
 https://www.artificialintelligence-news.com/news/assessing-ai-powered-price-forecasting-tools-in-currency-markets
@@ -4701,6 +4760,7 @@ https://www.artificialintelligence-news.com/news/sap-and-anybotics-drive-industr
 https://www.artificialintelligence-news.com/news/sap-brings-agentic-ai-human-capital-management
 https://www.artificialintelligence-news.com/news/sap-how-enterprise-ai-governance-secures-profit-margins
 https://www.artificialintelligence-news.com/news/scaling-intelligent-automation-without-breaking-live-workflows
+https://www.artificialintelligence-news.com/news/scaling-safe-enterprise-ai-openai-governance-frameworks
 https://www.artificialintelligence-news.com/news/secure-governance-accelerates-financial-ai-revenue-growth
 https://www.artificialintelligence-news.com/news/siemens-ai-automation-engineering-workflows
 https://www.artificialintelligence-news.com/news/snowflake-expands-its-technical-and-mainstream-ai-platforms
