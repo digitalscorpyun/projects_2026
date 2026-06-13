@@ -1,32 +1,16 @@
 #!/usr/bin/env python3
 # ==============================================================================
-# vault_yaml_validator.py — Anacostia YAML Schema Sentinel
-# Version: 2.0.0  |  22-field law enforced (+daily_journal exception)
-# Author: digitalscorpyun x VS-ENC (refactor)
-#
-# Purpose:
-# ==============================================================================
-# ✶⌁✶ vault_yaml_validator.py — SCHEMA SENTINEL v2.0.0 [LAW ENFORCEMENT]
+# ✶⌁✶ vault_yaml_validator.py — ANACOSTIA YAML SCHEMA SENTINEL v2.1.0 [ORDER ENFORCED]
 # ==============================================================================
 # ROLE: Canonical YAML compliance validator for the Anacostia Vault.
-# ENGINE: Python (Schema Enforcement, Non-Mutating)
-# JURISDICTION: Metadata Law, Frontmatter Validation, Audit Emission
-#
+# COMPLIANCE: WC-DIR-2026-01-11-ENV-HARDENING / SENTINEL-V2.0.0-ALIGN
 # PURPOSE:
-#   Validate YAML frontmatter compliance across the Anacostia Vault under the
-#   current 22-field Anacostia standard.
-#
-# KEY GUARANTEES:
-#   - Enforces REQUIRED 22 YAML fields for all notes
-#   - Flags ILLEGAL extra fields (daily_journal telemetry explicitly exempted)
-#   - Validates scalar vs list field typing
-#   - Verifies `path` equals vault-relative file path (POSIX form)
-#   - Emits CSV audit reports to: war_council/_artifacts/audits/
-#
-# EXECUTION POSTURE:
-#   Read-only. Non-mutating. Enforcement-first.
+#   - Validate YAML frontmatter compliance across the Anacostia Vault
+#   - Enforce the canonical 22-field Anacostia frontmatter law
+#   - Flag missing fields, illegal extra fields, type violations, and path mismatches
+#   - Enforce canonical YAML field order, with review_date last
+#   - Preserve CSV audit receipts for War Council review
 # ==============================================================================
-
 
 from __future__ import annotations
 
@@ -46,7 +30,11 @@ LOCAL_TZ = pytz.timezone("America/Los_Angeles")
 DEFAULT_VAULT_PATH = Path("C:/Users/digitalscorpyun/sankofa_temple/Anacostia")
 AUDIT_DIR_REL = Path("war_council/_artifacts/audits")
 
-# ---- Anacostia 22-field law (canonical) --------------------------------------
+# ---- Anacostia 22-field law: canonical order ---------------------------------
+#
+# review_date MUST remain last.
+# ctx_grok_reflection is the canonical field name.
+# Do not rename to grok_ctx_reflection.
 
 REQUIRED_FIELDS: List[str] = [
     "id",
@@ -65,7 +53,7 @@ REQUIRED_FIELDS: List[str] = [
     "synapses",
     "key_themes",
     "bias_analysis",
-    "grok_ctx_reflection",
+    "ctx_grok_reflection",
     "quotes",
     "adinkra",
     "linked_notes",
@@ -73,10 +61,12 @@ REQUIRED_FIELDS: List[str] = [
     "review_date",
 ]
 
+REQUIRED_FIELD_SET = set(REQUIRED_FIELDS)
+
 # daily_journal exception: allowed to include additional operational fields.
 DAILY_JOURNAL_CATEGORY = "daily_journal"
 
-# Expected types (enforced)
+# Expected types
 LIST_FIELDS = {
     "tags",
     "cssclasses",
@@ -87,7 +77,8 @@ LIST_FIELDS = {
     "linked_notes",
     "external_refs",
 }
-SCALAR_FIELDS = set(REQUIRED_FIELDS) - LIST_FIELDS
+
+SCALAR_FIELDS = REQUIRED_FIELD_SET - LIST_FIELDS
 
 # ---- YAML extraction ----------------------------------------------------------
 
@@ -115,7 +106,7 @@ def vault_relative_posix(vault_root: Path, file_path: Path) -> str:
     return file_path.relative_to(vault_root).as_posix()
 
 
-# ---- Validation core ----------------------------------------------------------
+# ---- Validation model ---------------------------------------------------------
 
 
 @dataclass
@@ -126,10 +117,14 @@ class ValidationResult:
     missing_fields: List[str]
     extra_fields: List[str]
     type_issues: List[str]
+    order_issues: List[str]
     path_mismatch: bool
     expected_path: str
     found_path: str
     category: str
+
+
+# ---- Validation core ----------------------------------------------------------
 
 
 def parse_yaml(yaml_text: str) -> Tuple[str, Optional[Dict[str, Any]]]:
@@ -142,48 +137,79 @@ def parse_yaml(yaml_text: str) -> Tuple[str, Optional[Dict[str, Any]]]:
         return "PARSE_ERROR", None
 
 
+def validate_required_fields(parsed: Dict[str, Any]) -> List[str]:
+    return [field for field in REQUIRED_FIELDS if field not in parsed]
+
+
+def validate_extra_fields(parsed: Dict[str, Any]) -> List[str]:
+    return [key for key in parsed.keys() if key not in REQUIRED_FIELD_SET]
+
+
 def validate_types(parsed: Dict[str, Any]) -> List[str]:
     issues: List[str] = []
 
-    # Lists
-    for k in LIST_FIELDS:
-        if k in parsed:
-            v = parsed[k]
-            if not isinstance(v, list):
-                issues.append(f"{k}:expected_list")
+    for key in LIST_FIELDS:
+        if key in parsed:
+            value = parsed[key]
+            if not isinstance(value, list):
+                issues.append(f"{key}:expected_list")
             else:
-                # ensure list items are scalars (strings/numbers), not dicts
-                for i, item in enumerate(v):
+                for index, item in enumerate(value):
                     if isinstance(item, (dict, list)):
-                        issues.append(f"{k}[{i}]:invalid_item_type")
+                        issues.append(f"{key}[{index}]:invalid_item_type")
 
-    # Scalars
-    for k in SCALAR_FIELDS:
-        if k in parsed:
-            v = parsed[k]
-            # YAML may parse dates as datetime/date depending; accept str/number/bool as "scalar"
-            if isinstance(v, (dict, list)):
-                issues.append(f"{k}:expected_scalar")
+    for key in SCALAR_FIELDS:
+        if key in parsed:
+            value = parsed[key]
+            if isinstance(value, (dict, list)):
+                issues.append(f"{key}:expected_scalar")
 
     return issues
 
 
-def validate_required_fields(parsed: Dict[str, Any]) -> List[str]:
-    return [f for f in REQUIRED_FIELDS if f not in parsed]
+def validate_field_order(parsed: Dict[str, Any], category: str) -> List[str]:
+    """
+    Enforces canonical ordering for the required 22 fields.
 
+    Extra fields are illegal for normal notes and already handled elsewhere.
+    For daily_journal notes, extra fields are allowed, but the required fields
+    must still appear in canonical relative order.
+    """
+    issues: List[str] = []
 
-def validate_extra_fields(parsed: Dict[str, Any]) -> List[str]:
-    return [k for k in parsed.keys() if k not in REQUIRED_FIELDS]
+    present_required = [key for key in parsed.keys() if key in REQUIRED_FIELD_SET]
+    expected_present = [key for key in REQUIRED_FIELDS if key in parsed]
+
+    if present_required != expected_present:
+        issues.append(
+            "required_field_order_mismatch:"
+            f"expected={'|'.join(expected_present)};"
+            f"found={'|'.join(present_required)}"
+        )
+
+    if "review_date" in parsed:
+        keys = list(parsed.keys())
+        if category == DAILY_JOURNAL_CATEGORY:
+            # daily_journal may have extra telemetry, but review_date still closes
+            # the canonical metadata block only if it is the final key overall.
+            if keys[-1] != "review_date":
+                issues.append("review_date:not_last")
+        else:
+            if keys[-1] != "review_date":
+                issues.append("review_date:not_last")
+
+    return issues
 
 
 def validate_path_field(
-    vault_root: Path, file_path: Path, parsed: Dict[str, Any]
+    vault_root: Path,
+    file_path: Path,
+    parsed: Dict[str, Any],
 ) -> Tuple[bool, str, str]:
     expected = vault_relative_posix(vault_root, file_path)
     found = parsed.get("path", "")
-    # Normalize found to string
     found_str = str(found) if found is not None else ""
-    return (found_str != expected), expected, found_str
+    return found_str != expected, expected, found_str
 
 
 def validate_file(vault_root: Path, file_path: Path) -> ValidationResult:
@@ -200,6 +226,7 @@ def validate_file(vault_root: Path, file_path: Path) -> ValidationResult:
             missing_fields=REQUIRED_FIELDS.copy(),
             extra_fields=[],
             type_issues=[],
+            order_issues=[],
             path_mismatch=False,
             expected_path=rel_file,
             found_path="",
@@ -215,35 +242,33 @@ def validate_file(vault_root: Path, file_path: Path) -> ValidationResult:
             missing_fields=REQUIRED_FIELDS.copy(),
             extra_fields=[],
             type_issues=[],
+            order_issues=[],
             path_mismatch=False,
             expected_path=rel_file,
             found_path="",
             category="",
         )
 
-    # Required fields
+    category_val = parsed.get("category", "")
+    category = str(category_val) if category_val is not None else ""
+
     missing = validate_required_fields(parsed)
 
-    # Category for exception logic
-    category_val = parsed.get("category", "")
-    category_str = str(category_val) if category_val is not None else ""
-
-    # Extra fields (illegal unless daily_journal)
     extras = validate_extra_fields(parsed)
-    if category_str == DAILY_JOURNAL_CATEGORY:
-        # daily_journal may include additional telemetry fields: allow extras
+    if category == DAILY_JOURNAL_CATEGORY:
         extras = []
 
-    # Types
     type_issues = validate_types(parsed)
+    order_issues = validate_field_order(parsed, category)
 
-    # Path
     path_mismatch, expected_path, found_path = validate_path_field(
-        vault_root, file_path, parsed
+        vault_root,
+        file_path,
+        parsed,
     )
 
     status = "OK"
-    if missing or extras or type_issues or path_mismatch:
+    if missing or extras or type_issues or order_issues or path_mismatch:
         status = "FAIL"
 
     return ValidationResult(
@@ -253,35 +278,40 @@ def validate_file(vault_root: Path, file_path: Path) -> ValidationResult:
         missing_fields=missing,
         extra_fields=extras,
         type_issues=type_issues,
+        order_issues=order_issues,
         path_mismatch=path_mismatch,
         expected_path=expected_path,
         found_path=found_path,
-        category=category_str,
+        category=category,
     )
 
 
 def scan_vault(vault_root: Path, include_ok: bool = False) -> List[ValidationResult]:
     results: List[ValidationResult] = []
+
     for md_file in vault_root.rglob("*.md"):
-        # Skip common hidden/system folders if present
-        parts = {p.lower() for p in md_file.parts}
+        parts = {part.lower() for part in md_file.parts}
+
         if ".obsidian" in parts:
             continue
 
-        r = validate_file(vault_root, md_file)
-        if include_ok or r.status != "OK":
-            results.append(r)
+        result = validate_file(vault_root, md_file)
+
+        if include_ok or result.status != "OK":
+            results.append(result)
+
     return results
 
 
-def write_csv_report(
-    vault_root: Path, results: List[ValidationResult], out_path: Path
-) -> None:
+# ---- CSV audit emission -------------------------------------------------------
+
+
+def write_csv_report(results: List[ValidationResult], out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with out_path.open("w", newline="", encoding="utf-8") as f:
+    with out_path.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(
-            f,
+            file,
             fieldnames=[
                 "file",
                 "status",
@@ -290,81 +320,95 @@ def write_csv_report(
                 "missing_fields",
                 "extra_fields",
                 "type_issues",
+                "order_issues",
                 "path_mismatch",
                 "expected_path",
                 "found_path",
             ],
         )
+
         writer.writeheader()
-        for r in results:
+
+        for result in results:
             writer.writerow(
                 {
-                    "file": r.file,
-                    "status": r.status,
-                    "parse_status": r.parse_status,
-                    "category": r.category,
-                    "missing_fields": ", ".join(r.missing_fields),
-                    "extra_fields": ", ".join(r.extra_fields),
-                    "type_issues": ", ".join(r.type_issues),
-                    "path_mismatch": "true" if r.path_mismatch else "false",
-                    "expected_path": r.expected_path,
-                    "found_path": r.found_path,
+                    "file": result.file,
+                    "status": result.status,
+                    "parse_status": result.parse_status,
+                    "category": result.category,
+                    "missing_fields": ", ".join(result.missing_fields),
+                    "extra_fields": ", ".join(result.extra_fields),
+                    "type_issues": ", ".join(result.type_issues),
+                    "order_issues": ", ".join(result.order_issues),
+                    "path_mismatch": "true" if result.path_mismatch else "false",
+                    "expected_path": result.expected_path,
+                    "found_path": result.found_path,
                 }
             )
 
 
 def summarize(results: List[ValidationResult]) -> Tuple[int, int]:
     total = len(results)
-    fails = sum(1 for r in results if r.status != "OK")
-    return total, fails
+    failures = sum(1 for result in results if result.status != "OK")
+    return total, failures
+
+
+# ---- CLI ----------------------------------------------------------------------
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Anacostia YAML Schema Sentinel (22-field law)."
+        description="Anacostia YAML Schema Sentinel v2.1.0 — 22-field law + order enforcement."
     )
+
     parser.add_argument(
         "--vault",
         type=str,
         default=str(DEFAULT_VAULT_PATH),
         help="Absolute path to Anacostia vault root.",
     )
+
     parser.add_argument(
         "--include-ok",
         action="store_true",
-        help="Include OK files in the CSV report (default: only FAIL).",
+        help="Include OK files in the CSV report. Default reports only failures.",
     )
+
     parser.add_argument(
         "--out",
         type=str,
         default="",
         help="Optional explicit output CSV path. Default writes to war_council/_artifacts/audits/.",
     )
+
     args = parser.parse_args()
 
     vault_root = Path(args.vault)
+
     if not vault_root.exists():
         print(f"❌ Vault path not found: {vault_root}")
         return 2
 
     results = scan_vault(vault_root, include_ok=args.include_ok)
-    total, fails = summarize(results)
+    total, failures = summarize(results)
 
     if args.out.strip():
         out_path = Path(args.out)
     else:
-        out_dir = vault_root / AUDIT_DIR_REL
-        out_path = out_dir / f"yaml_validation_report_{now_stamp()}.csv"
+        out_path = (
+            vault_root
+            / AUDIT_DIR_REL
+            / f"yaml_validation_report_{now_stamp()}.csv"
+        )
 
-    write_csv_report(vault_root, results, out_path)
+    write_csv_report(results, out_path)
 
     print(f"🔍 Vault: {vault_root}")
     print(f"📄 Report: {out_path}")
-    print(f"📦 Files reported: {total}  |  ❌ Fails: {fails}")
+    print(f"📦 Files reported: {total}  |  ❌ Fails: {failures}")
 
-    return 0 if fails == 0 else 1
+    return 0 if failures == 0 else 1
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
