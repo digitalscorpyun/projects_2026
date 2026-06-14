@@ -1,0 +1,13 @@
+"file","status","applied","had_frontmatter","changes","error"
+"C:\Users\digitalscorpyun\sankofa_temple\Anacostia\liberal_arts\reading_journal\book_summaries\critical_theory\technofeudalism\technofeudalism_outline_nb_lm.md","error","no","","","while constructing a mapping
+  in ""<unicode string>"", line 7, column 10:
+    updated: {{date:YYYY-MM-DD}}
+             ^
+found unhashable key
+  in ""<unicode string>"", line 7, column 11:
+    updated: {{date:YYYY-MM-DD}}
+              ^"
+"C:\Users\digitalscorpyun\sankofa_temple\Anacostia\Templates\daily_journal_template.md","error","no","","","mapping values are not allowed here
+  in ""<unicode string>"", line 41, column 51:
+     ... .date.now(""YYYY-MM-DD"", { months: 3 }) %>
+                                         ^"
