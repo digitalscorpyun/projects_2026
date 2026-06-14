@@ -2,63 +2,49 @@
 """
 vault_yaml_normalizer.py
 
-Normalize Anacostia Vault Markdown YAML frontmatter.
+Line-preserving YAML frontmatter normalizer for the Anacostia Vault.
 
 Default mode is DRY RUN.
 Use --apply to write changes.
 
-Core behaviors:
-- Preserve Markdown body exactly.
-- Rewrite YAML frontmatter in AVM-style field order.
-- Rename grok_ctx_reflection -> ctx_grok_reflection.
-- Move ctx_grok_reflection after bias_analysis.
-- Keep review_date last.
-- Fix path field from file location relative to vault root.
-- Convert scalar list fields into YAML lists.
-- Optionally fill missing required fields.
-- Optionally drop extra YAML fields.
-- Emit CSV report.
+This script avoids full YAML reserialization. It edits only targeted
+frontmatter lines and blocks so existing formatting is preserved.
 
-Usage examples:
-
-python vault_yaml_normalizer.py C:\\Users\\digitalscorpyun\\sankofa_temple\\Anacostia
-
-python vault_yaml_normalizer.py C:\\Users\\digitalscorpyun\\sankofa_temple\\Anacostia --apply
-
-python vault_yaml_normalizer.py C:\\Users\\digitalscorpyun\\sankofa_temple\\Anacostia --apply --fill-missing
-
-python vault_yaml_normalizer.py C:\\Users\\digitalscorpyun\\sankofa_temple\\Anacostia --apply --drop-extras
+Operations:
+- Skip Templates by default
+- Preserve Markdown body exactly
+- Fix top-level path field
+- Rename top-level grok_ctx_reflection -> ctx_grok_reflection
+- Convert scalar top-level list fields into flush-left YAML lists
+- Reorder known AVM fields as whole preserved blocks
+- Emit CSV report
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
-import datetime as dt
+import re
 import sys
-from collections import OrderedDict
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
-
-try:
-    import yaml
-except ImportError:
-    print("ERROR: PyYAML is required. Install with: pip install pyyaml", file=sys.stderr)
-    sys.exit(1)
 
 
 FIELD_ORDER = [
+    "id",
     "title",
     "subtitle",
+    "category",
+    "style",
     "created",
     "updated",
     "status",
     "priority",
-    "category",
     "path",
     "summary",
     "longform_summary",
     "tags",
+    "cssclasses",
     "synapses",
     "key_themes",
     "bias_analysis",
@@ -72,6 +58,7 @@ FIELD_ORDER = [
 
 LIST_FIELDS = {
     "tags",
+    "cssclasses",
     "synapses",
     "key_themes",
     "quotes",
@@ -80,216 +67,55 @@ LIST_FIELDS = {
     "external_refs",
 }
 
-DEFAULTS = {
-    "title": "",
-    "subtitle": "",
-    "created": "",
-    "updated": "",
-    "status": "draft",
-    "priority": "normal",
-    "category": "",
-    "path": "",
-    "summary": "",
-    "longform_summary": "",
-    "tags": [],
-    "synapses": [],
-    "key_themes": [],
-    "bias_analysis": "",
-    "ctx_grok_reflection": "",
-    "quotes": [],
-    "adinkra": [],
-    "linked_notes": [],
-    "external_refs": [],
-    "review_date": "",
+DEFAULT_EXCLUDED_DIRS = {
+    ".obsidian",
+    ".git",
+    "Templates",
 }
 
-
-def today() -> str:
-    return dt.date.today().isoformat()
+TOP_LEVEL_KEY_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):(.*)$")
 
 
-def split_frontmatter(text: str) -> tuple[dict[str, Any], str, bool]:
+@dataclass
+class YAMLBlock:
+    key: str
+    lines: list[str]
+
+
+def split_frontmatter_raw(text: str) -> tuple[str | None, str, bool]:
     """
-    Return (frontmatter_dict, body, had_frontmatter).
-    Body is preserved exactly after the closing YAML fence.
+    Return raw frontmatter, body, and whether frontmatter exists.
+
+    raw_frontmatter excludes the opening and closing --- fences.
+    body is preserved exactly after the closing fence.
     """
     if not text.startswith("---\n"):
-        return {}, text, False
+        return None, text, False
 
     end_marker = "\n---\n"
     end_index = text.find(end_marker, 4)
 
     if end_index == -1:
-        return {}, text, False
+        raise ValueError("Opening YAML fence found, but closing YAML fence is missing.")
 
-    raw_yaml = text[4:end_index]
+    raw_frontmatter = text[4:end_index]
     body = text[end_index + len(end_marker):]
 
-    if not raw_yaml.strip():
-        return {}, body, True
-
-    loaded = yaml.safe_load(raw_yaml)
-
-    if loaded is None:
-        return {}, body, True
-
-    if not isinstance(loaded, dict):
-        raise ValueError("YAML frontmatter must be a mapping/dictionary.")
-
-    return dict(loaded), body, True
+    return raw_frontmatter, body, True
 
 
-def normalize_list_value(value: Any) -> list[Any]:
-    """
-    Convert scalar values into list form.
-    Preserve lists.
-    Convert None/empty string to [].
-    """
-    if value is None:
-        return []
-
-    if isinstance(value, list):
-        return value
-
-    if isinstance(value, tuple):
-        return list(value)
-
-    if isinstance(value, str):
-        stripped = value.strip()
-        if not stripped:
-            return []
-
-        # If user wrote comma-separated inline scalar, split gently.
-        if "," in stripped and not stripped.startswith("["):
-            return [item.strip() for item in stripped.split(",") if item.strip()]
-
-        return [stripped]
-
-    return [value]
+def rebuild_markdown(raw_frontmatter: str, body: str) -> str:
+    return f"---\n{raw_frontmatter}\n---\n{body}"
 
 
-def infer_title_from_filename(path: Path) -> str:
-    stem = path.stem.replace("_", " ").replace("-", " ")
-    return " ".join(word.capitalize() for word in stem.split())
+def is_excluded_path(path: Path, excluded_dirs: set[str]) -> bool:
+    excluded_lower = {item.lower() for item in excluded_dirs}
+    return any(part.lower() in excluded_lower for part in path.parts)
 
 
-def infer_category_from_relative_path(relative_path: Path) -> str:
-    parts = relative_path.parts
-    if len(parts) <= 1:
-        return ""
-
-    return parts[0]
-
-
-def vault_relative_path(file_path: Path, root: Path) -> str:
-    rel = file_path.relative_to(root)
-    return rel.as_posix()
-
-
-def normalize_frontmatter(
-    data: dict[str, Any],
-    file_path: Path,
-    root: Path,
-    fill_missing: bool = False,
-    drop_extras: bool = False,
-) -> tuple[OrderedDict[str, Any], list[str]]:
-    changes: list[str] = []
-    normalized: dict[str, Any] = dict(data)
-
-    if "grok_ctx_reflection" in normalized:
-        old_value = normalized.pop("grok_ctx_reflection")
-
-        if "ctx_grok_reflection" not in normalized or normalized.get("ctx_grok_reflection") in (None, ""):
-            normalized["ctx_grok_reflection"] = old_value
-
-        changes.append("renamed grok_ctx_reflection -> ctx_grok_reflection")
-
-    expected_path = vault_relative_path(file_path, root)
-
-    if normalized.get("path") != expected_path:
-        normalized["path"] = expected_path
-        changes.append(f"fixed path -> {expected_path}")
-
-    if fill_missing:
-        for key, default_value in DEFAULTS.items():
-            if key not in normalized or normalized[key] is None:
-                if key == "title":
-                    normalized[key] = infer_title_from_filename(file_path)
-                elif key == "created":
-                    normalized[key] = today()
-                elif key == "updated":
-                    normalized[key] = today()
-                elif key == "review_date":
-                    normalized[key] = today()
-                elif key == "category":
-                    normalized[key] = infer_category_from_relative_path(file_path.relative_to(root))
-                else:
-                    normalized[key] = default_value.copy() if isinstance(default_value, list) else default_value
-
-                changes.append(f"filled missing {key}")
-
-    for key in LIST_FIELDS:
-        if key in normalized:
-            old_value = normalized[key]
-            new_value = normalize_list_value(old_value)
-
-            if old_value != new_value:
-                normalized[key] = new_value
-                changes.append(f"converted {key} to list")
-
-    ordered: OrderedDict[str, Any] = OrderedDict()
-
-    for key in FIELD_ORDER:
-        if key in normalized:
-            ordered[key] = normalized[key]
-
-    if not drop_extras:
-        for key, value in normalized.items():
-            if key not in ordered:
-                ordered[key] = value
-    else:
-        extras = [key for key in normalized if key not in FIELD_ORDER]
-        if extras:
-            changes.append(f"dropped extras: {', '.join(extras)}")
-
-    # Force review_date to the end if present.
-    if "review_date" in ordered:
-        review_date_value = ordered.pop("review_date")
-        ordered["review_date"] = review_date_value
-
-    return ordered, changes
-
-
-class AVMYAMLDumper(yaml.SafeDumper):
-    pass
-
-
-def represent_ordered_dict(dumper: yaml.Dumper, data: OrderedDict) -> yaml.nodes.MappingNode:
-    return dumper.represent_mapping("tag:yaml.org,2002:map", data.items())
-
-
-AVMYAMLDumper.add_representer(OrderedDict, represent_ordered_dict)
-
-
-def dump_frontmatter(data: OrderedDict[str, Any]) -> str:
-    return yaml.dump(
-        data,
-        Dumper=AVMYAMLDumper,
-        sort_keys=False,
-        allow_unicode=True,
-        default_flow_style=False,
-        width=1000,
-    ).strip()
-
-
-def rebuild_markdown(frontmatter: OrderedDict[str, Any], body: str) -> str:
-    yaml_text = dump_frontmatter(frontmatter)
-    return f"---\n{yaml_text}\n---\n{body}"
-
-
-def iter_markdown_files(target: Path) -> list[Path]:
+def iter_markdown_files(target: Path, excluded_dirs: set[str]) -> list[Path]:
     if target.is_file():
-        if target.suffix.lower() == ".md":
+        if target.suffix.lower() == ".md" and not is_excluded_path(target, excluded_dirs):
             return [target]
         return []
 
@@ -297,43 +123,326 @@ def iter_markdown_files(target: Path) -> list[Path]:
         path
         for path in target.rglob("*.md")
         if path.is_file()
-        and ".obsidian" not in path.parts
-        and ".git" not in path.parts
+        and not is_excluded_path(path, excluded_dirs)
     )
+
+
+def vault_relative_path(file_path: Path, root: Path) -> str:
+    return file_path.relative_to(root).as_posix()
+
+
+def parse_frontmatter_blocks(raw_frontmatter: str) -> list[YAMLBlock]:
+    """
+    Parse top-level YAML into preserved blocks.
+
+    A block begins at a flush-left top-level key:
+        key: value
+
+    All following lines belong to that key until the next flush-left key.
+    """
+    lines = raw_frontmatter.splitlines()
+    blocks: list[YAMLBlock] = []
+    current_key: str | None = None
+    current_lines: list[str] = []
+
+    for line in lines:
+        match = TOP_LEVEL_KEY_RE.match(line)
+
+        if match:
+            if current_key is not None:
+                blocks.append(YAMLBlock(key=current_key, lines=current_lines))
+
+            current_key = match.group(1)
+            current_lines = [line]
+        else:
+            if current_key is None:
+                current_key = "__preamble__"
+                current_lines = [line]
+            else:
+                current_lines.append(line)
+
+    if current_key is not None:
+        blocks.append(YAMLBlock(key=current_key, lines=current_lines))
+
+    return blocks
+
+
+def serialize_blocks(blocks: list[YAMLBlock]) -> str:
+    all_lines: list[str] = []
+
+    for block in blocks:
+        all_lines.extend(block.lines)
+
+    return "\n".join(all_lines)
+
+
+def replace_block_key(block: YAMLBlock, new_key: str) -> YAMLBlock:
+    first_line = block.lines[0]
+    match = TOP_LEVEL_KEY_RE.match(first_line)
+
+    if not match:
+        return block
+
+    rest = match.group(2)
+    new_lines = list(block.lines)
+    new_lines[0] = f"{new_key}:{rest}"
+
+    return YAMLBlock(key=new_key, lines=new_lines)
+
+
+def set_simple_scalar_block(key: str, value: str) -> YAMLBlock:
+    return YAMLBlock(key=key, lines=[f"{key}: {value}"])
+
+
+def is_single_line_scalar_block(block: YAMLBlock) -> bool:
+    if len(block.lines) != 1:
+        return False
+
+    line = block.lines[0]
+    match = TOP_LEVEL_KEY_RE.match(line)
+
+    if not match:
+        return False
+
+    value = match.group(2).strip()
+
+    if value == "":
+        return False
+
+    if value in {"[]", "{}"}:
+        return False
+
+    if value.startswith("[") or value.startswith("{"):
+        return False
+
+    if value.startswith("|") or value.startswith(">"):
+        return False
+
+    return True
+
+
+def scalar_value_from_block(block: YAMLBlock) -> str:
+    line = block.lines[0]
+    match = TOP_LEVEL_KEY_RE.match(line)
+
+    if not match:
+        return ""
+
+    return match.group(2).strip()
+
+
+def strip_wrapping_quotes(value: str) -> str:
+    if len(value) >= 2:
+        if value[0] == value[-1] and value[0] in {"'", '"'}:
+            return value[1:-1]
+
+    return value
+
+
+def convert_scalar_list_block(block: YAMLBlock) -> YAMLBlock:
+    """
+    Convert:
+        adinkra: Sankofa
+
+    To:
+        adinkra:
+        - Sankofa
+
+    Also handles comma-separated scalar values.
+    """
+    value = strip_wrapping_quotes(scalar_value_from_block(block)).strip()
+
+    if not value:
+        return block
+
+    if "," in value:
+        items = [item.strip() for item in value.split(",") if item.strip()]
+    else:
+        items = [value]
+
+    lines = [f"{block.key}:"]
+
+    for item in items:
+        lines.append(f"- {item}")
+
+    return YAMLBlock(key=block.key, lines=lines)
+
+
+def dedupe_blocks_keep_first(blocks: list[YAMLBlock]) -> tuple[list[YAMLBlock], list[str]]:
+    seen: set[str] = set()
+    result: list[YAMLBlock] = []
+    changes: list[str] = []
+
+    for block in blocks:
+        if block.key == "__preamble__":
+            result.append(block)
+            continue
+
+        if block.key in seen:
+            changes.append(f"dropped duplicate {block.key}")
+            continue
+
+        seen.add(block.key)
+        result.append(block)
+
+    return result, changes
+
+
+def reorder_blocks(blocks: list[YAMLBlock]) -> tuple[list[YAMLBlock], bool]:
+    original_keys = [block.key for block in blocks]
+
+    preamble_blocks = [block for block in blocks if block.key == "__preamble__"]
+    real_blocks = [block for block in blocks if block.key != "__preamble__"]
+
+    by_key: dict[str, YAMLBlock] = {}
+
+    for block in real_blocks:
+        if block.key not in by_key:
+            by_key[block.key] = block
+
+    ordered: list[YAMLBlock] = []
+    ordered.extend(preamble_blocks)
+
+    for key in FIELD_ORDER:
+        if key in by_key:
+            ordered.append(by_key[key])
+
+    for block in real_blocks:
+        if block.key not in FIELD_ORDER and block.key in by_key:
+            ordered.append(block)
+
+    new_keys = [block.key for block in ordered]
+
+    return ordered, original_keys != new_keys
+
+
+def normalize_frontmatter_raw(
+    raw_frontmatter: str,
+    file_path: Path,
+    root: Path,
+) -> tuple[str, list[str]]:
+    changes: list[str] = []
+    blocks = parse_frontmatter_blocks(raw_frontmatter)
+
+    new_blocks: list[YAMLBlock] = []
+    has_ctx_grok_reflection = any(block.key == "ctx_grok_reflection" for block in blocks)
+
+    for block in blocks:
+        if block.key == "grok_ctx_reflection":
+            if has_ctx_grok_reflection:
+                changes.append("dropped grok_ctx_reflection because ctx_grok_reflection already exists")
+                continue
+
+            block = replace_block_key(block, "ctx_grok_reflection")
+            changes.append("renamed grok_ctx_reflection -> ctx_grok_reflection")
+
+        new_blocks.append(block)
+
+    blocks = new_blocks
+
+    expected_path = vault_relative_path(file_path, root)
+    path_found = False
+    new_blocks = []
+
+    for block in blocks:
+        if block.key == "path":
+            path_found = True
+            current_value = scalar_value_from_block(block)
+            current_value_unquoted = strip_wrapping_quotes(current_value)
+
+            if current_value_unquoted != expected_path:
+                block = set_simple_scalar_block("path", expected_path)
+                changes.append(f"fixed path -> {expected_path}")
+
+        new_blocks.append(block)
+
+    blocks = new_blocks
+
+    if not path_found:
+        insert_index = 0
+
+        preferred_before_path = {
+            "id",
+            "title",
+            "subtitle",
+            "category",
+            "style",
+            "created",
+            "updated",
+            "status",
+            "priority",
+        }
+
+        for index, block in enumerate(blocks):
+            if block.key in preferred_before_path:
+                insert_index = index + 1
+
+        blocks.insert(insert_index, set_simple_scalar_block("path", expected_path))
+        changes.append(f"added path -> {expected_path}")
+
+    new_blocks = []
+
+    for block in blocks:
+        if block.key in LIST_FIELDS and is_single_line_scalar_block(block):
+            old_lines = list(block.lines)
+            block = convert_scalar_list_block(block)
+
+            if block.lines != old_lines:
+                changes.append(f"converted {block.key} to list")
+
+        new_blocks.append(block)
+
+    blocks = new_blocks
+
+    blocks, dedupe_changes = dedupe_blocks_keep_first(blocks)
+    changes.extend(dedupe_changes)
+
+    blocks, reordered = reorder_blocks(blocks)
+
+    if reordered:
+        changes.append("reordered known AVM fields")
+
+    new_raw_frontmatter = serialize_blocks(blocks)
+
+    return new_raw_frontmatter, changes
 
 
 def process_file(
     file_path: Path,
     root: Path,
-    apply: bool,
-    fill_missing: bool,
-    drop_extras: bool,
+    apply_changes: bool,
 ) -> dict[str, str]:
-    original_text = file_path.read_text(encoding="utf-8")
-
     try:
-        frontmatter, body, had_frontmatter = split_frontmatter(original_text)
+        original_text = file_path.read_text(encoding="utf-8")
+        raw_frontmatter, body, had_frontmatter = split_frontmatter_raw(original_text)
 
-        normalized, changes = normalize_frontmatter(
-            frontmatter,
+        if not had_frontmatter or raw_frontmatter is None:
+            return {
+                "file": str(file_path),
+                "status": "skipped",
+                "applied": "no",
+                "had_frontmatter": "no",
+                "changes": "missing frontmatter; skipped",
+                "error": "",
+            }
+
+        new_raw_frontmatter, changes = normalize_frontmatter_raw(
+            raw_frontmatter=raw_frontmatter,
             file_path=file_path,
             root=root,
-            fill_missing=fill_missing,
-            drop_extras=drop_extras,
         )
 
-        new_text = rebuild_markdown(normalized, body)
-
+        new_text = rebuild_markdown(new_raw_frontmatter, body)
         changed = new_text != original_text
 
-        if apply and changed:
+        if apply_changes and changed:
             file_path.write_text(new_text, encoding="utf-8")
 
         return {
             "file": str(file_path),
             "status": "changed" if changed else "ok",
-            "applied": "yes" if apply and changed else "no",
-            "had_frontmatter": "yes" if had_frontmatter else "no",
+            "applied": "yes" if apply_changes and changed else "no",
+            "had_frontmatter": "yes",
             "changes": "; ".join(changes),
             "error": "",
         }
@@ -350,8 +459,6 @@ def process_file(
 
 
 def write_report(rows: list[dict[str, str]], report_path: Path) -> None:
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-
     fieldnames = [
         "file",
         "status",
@@ -361,6 +468,8 @@ def write_report(rows: list[dict[str, str]], report_path: Path) -> None:
         "error",
     ]
 
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+
     with report_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
@@ -369,7 +478,7 @@ def write_report(rows: list[dict[str, str]], report_path: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Normalize Anacostia Vault YAML frontmatter."
+        description="Line-preserving Anacostia Vault YAML frontmatter normalizer."
     )
 
     parser.add_argument(
@@ -379,8 +488,8 @@ def main() -> int:
 
     parser.add_argument(
         "--root",
-        help="Vault root. Defaults to target if target is directory, otherwise parent of target.",
         default=None,
+        help="Vault root. Defaults to target if target is directory, otherwise parent of target.",
     )
 
     parser.add_argument(
@@ -390,15 +499,9 @@ def main() -> int:
     )
 
     parser.add_argument(
-        "--fill-missing",
+        "--include-templates",
         action="store_true",
-        help="Fill missing AVM fields with safe defaults.",
-    )
-
-    parser.add_argument(
-        "--drop-extras",
-        action="store_true",
-        help="Drop YAML keys not in FIELD_ORDER.",
+        help="Include Templates directory. Default is to skip it.",
     )
 
     parser.add_argument(
@@ -424,11 +527,12 @@ def main() -> int:
         print(f"ERROR: root does not exist: {root}", file=sys.stderr)
         return 1
 
-    markdown_files = iter_markdown_files(target)
+    excluded_dirs = set(DEFAULT_EXCLUDED_DIRS)
 
-    if not markdown_files:
-        print("No Markdown files found.")
-        return 0
+    if args.include_templates:
+        excluded_dirs.discard("Templates")
+
+    markdown_files = iter_markdown_files(target, excluded_dirs=excluded_dirs)
 
     rows: list[dict[str, str]] = []
 
@@ -448,28 +552,32 @@ def main() -> int:
             )
             continue
 
-        row = process_file(
-            file_path=file_path,
-            root=root,
-            apply=args.apply,
-            fill_missing=args.fill_missing,
-            drop_extras=args.drop_extras,
+        rows.append(
+            process_file(
+                file_path=file_path,
+                root=root,
+                apply_changes=args.apply,
+            )
         )
-        rows.append(row)
 
     report_path = Path(args.report).expanduser().resolve()
     write_report(rows, report_path)
 
+    ok_count = sum(1 for row in rows if row["status"] == "ok")
     changed_count = sum(1 for row in rows if row["status"] == "changed")
+    skipped_count = sum(1 for row in rows if row["status"] == "skipped")
     error_count = sum(1 for row in rows if row["status"] == "error")
 
     mode = "APPLY" if args.apply else "DRY RUN"
 
     print(f"Mode: {mode}")
     print(f"Files scanned: {len(rows)}")
+    print(f"OK: {ok_count}")
     print(f"Changed: {changed_count}")
+    print(f"Skipped: {skipped_count}")
     print(f"Errors: {error_count}")
     print(f"Report: {report_path}")
+    print(f"Excluded dirs: {', '.join(sorted(excluded_dirs))}")
 
     if not args.apply and changed_count:
         print("Dry run only. Re-run with --apply to write changes.")
