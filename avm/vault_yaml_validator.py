@@ -7,9 +7,11 @@
 # PURPOSE:
 #   - Validate YAML frontmatter compliance across the Anacostia Vault
 #   - Enforce the canonical 22-field Anacostia frontmatter law
-#   - Flag missing fields, illegal extra fields, type violations, and path mismatches
+#   - Enforce canonical field name: ctx_grok_reflection
+#   - Flag missing fields, illegal extra fields, type violations, and path drift
 #   - Enforce canonical YAML field order, with review_date last
-#   - Preserve CSV audit receipts for War Council review
+#   - Survive malformed YAML keys and emit audit receipts instead of crashing
+#   - Preserve CSV audit reports for War Council review
 # ==============================================================================
 
 from __future__ import annotations
@@ -32,9 +34,18 @@ AUDIT_DIR_REL = Path("war_council/_artifacts/audits")
 
 # ---- Anacostia 22-field law: canonical order ---------------------------------
 #
-# review_date MUST remain last.
-# ctx_grok_reflection is the canonical field name.
-# Do not rename to grok_ctx_reflection.
+# RULES:
+#   - id is a numeric string-style identifier, not a slug.
+#   - path is the vault-relative POSIX file path.
+#   - ctx_grok_reflection is the canonical field name.
+#   - review_date MUST remain the final YAML field.
+#   - No schema improvisation.
+#
+# NOTE:
+#   The previous validator drifted to grok_ctx_reflection.
+#   That is now invalid and will be flagged as:
+#     missing ctx_grok_reflection
+#     extra grok_ctx_reflection
 
 REQUIRED_FIELDS: List[str] = [
     "id",
@@ -63,10 +74,6 @@ REQUIRED_FIELDS: List[str] = [
 
 REQUIRED_FIELD_SET = set(REQUIRED_FIELDS)
 
-# daily_journal exception: allowed to include additional operational fields.
-DAILY_JOURNAL_CATEGORY = "daily_journal"
-
-# Expected types
 LIST_FIELDS = {
     "tags",
     "cssclasses",
@@ -80,30 +87,49 @@ LIST_FIELDS = {
 
 SCALAR_FIELDS = REQUIRED_FIELD_SET - LIST_FIELDS
 
-# ---- YAML extraction ----------------------------------------------------------
+DAILY_JOURNAL_CATEGORY = "daily_journal"
 
 YAML_FM_RE = re.compile(r"(?s)\A---\s*\n(.*?)\n---\s*\n")
+
+
+# ---- Utility -----------------------------------------------------------------
 
 
 def now_stamp() -> str:
     return datetime.now(LOCAL_TZ).strftime("%Y%m%d_%H%M%S")
 
 
+def stringify_item(item: Any) -> str:
+    return str(item)
+
+
+def stringify_items(items: List[Any]) -> str:
+    return ", ".join(stringify_item(item) for item in items)
+
+
 def extract_yaml_frontmatter(content: str) -> Optional[str]:
-    m = YAML_FM_RE.match(content)
-    return m.group(1) if m else None
+    match = YAML_FM_RE.match(content)
+    return match.group(1) if match else None
 
 
 def safe_read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
 
 
-def is_markdown(path: Path) -> bool:
-    return path.suffix.lower() == ".md"
-
-
 def vault_relative_posix(vault_root: Path, file_path: Path) -> str:
     return file_path.relative_to(vault_root).as_posix()
+
+
+def as_string_key(key: Any) -> str:
+    """
+    PyYAML can parse unquoted date-like keys as datetime.date.
+    This function prevents the validator from crashing when reporting malformed keys.
+    """
+    return str(key)
+
+
+def parsed_keys_as_strings(parsed: Dict[Any, Any]) -> List[str]:
+    return [as_string_key(key) for key in parsed.keys()]
 
 
 # ---- Validation model ---------------------------------------------------------
@@ -115,7 +141,7 @@ class ValidationResult:
     status: str  # OK | FAIL
     parse_status: str  # OK | NO_YAML | PARSE_ERROR | MALFORMED
     missing_fields: List[str]
-    extra_fields: List[str]
+    extra_fields: List[Any]
     type_issues: List[str]
     order_issues: List[str]
     path_mismatch: bool
@@ -124,10 +150,10 @@ class ValidationResult:
     category: str
 
 
-# ---- Validation core ----------------------------------------------------------
+# ---- YAML parse ---------------------------------------------------------------
 
 
-def parse_yaml(yaml_text: str) -> Tuple[str, Optional[Dict[str, Any]]]:
+def parse_yaml(yaml_text: str) -> Tuple[str, Optional[Dict[Any, Any]]]:
     try:
         parsed = yaml.safe_load(yaml_text)
         if not isinstance(parsed, dict) or not parsed:
@@ -137,48 +163,66 @@ def parse_yaml(yaml_text: str) -> Tuple[str, Optional[Dict[str, Any]]]:
         return "PARSE_ERROR", None
 
 
-def validate_required_fields(parsed: Dict[str, Any]) -> List[str]:
-    return [field for field in REQUIRED_FIELDS if field not in parsed]
+# ---- Validation functions -----------------------------------------------------
 
 
-def validate_extra_fields(parsed: Dict[str, Any]) -> List[str]:
-    return [key for key in parsed.keys() if key not in REQUIRED_FIELD_SET]
+def validate_required_fields(parsed: Dict[Any, Any]) -> List[str]:
+    keys = set(parsed_keys_as_strings(parsed))
+    return [field for field in REQUIRED_FIELDS if field not in keys]
 
 
-def validate_types(parsed: Dict[str, Any]) -> List[str]:
+def validate_extra_fields(parsed: Dict[Any, Any]) -> List[Any]:
+    extras: List[Any] = []
+
+    for key in parsed.keys():
+        key_string = as_string_key(key)
+        if key_string not in REQUIRED_FIELD_SET:
+            extras.append(key)
+
+    return extras
+
+
+def validate_types(parsed: Dict[Any, Any]) -> List[str]:
     issues: List[str] = []
 
-    for key in LIST_FIELDS:
-        if key in parsed:
-            value = parsed[key]
+    for key, value in parsed.items():
+        key_string = as_string_key(key)
+
+        if key_string in LIST_FIELDS:
             if not isinstance(value, list):
-                issues.append(f"{key}:expected_list")
+                issues.append(f"{key_string}:expected_list")
             else:
                 for index, item in enumerate(value):
                     if isinstance(item, (dict, list)):
-                        issues.append(f"{key}[{index}]:invalid_item_type")
+                        issues.append(f"{key_string}[{index}]:invalid_item_type")
 
-    for key in SCALAR_FIELDS:
-        if key in parsed:
-            value = parsed[key]
+        if key_string in SCALAR_FIELDS:
             if isinstance(value, (dict, list)):
-                issues.append(f"{key}:expected_scalar")
+                issues.append(f"{key_string}:expected_scalar")
 
     return issues
 
 
-def validate_field_order(parsed: Dict[str, Any], category: str) -> List[str]:
+def validate_field_order(parsed: Dict[Any, Any], category: str) -> List[str]:
     """
-    Enforces canonical ordering for the required 22 fields.
+    Enforces canonical relative order for the required 22 fields.
 
-    Extra fields are illegal for normal notes and already handled elsewhere.
-    For daily_journal notes, extra fields are allowed, but the required fields
-    must still appear in canonical relative order.
+    Normal notes:
+      - required fields must appear in exact REQUIRED_FIELDS order
+      - review_date must be the final key in the YAML block
+      - extras are illegal and handled separately
+
+    daily_journal:
+      - extra operational telemetry fields are allowed
+      - required fields must still appear in canonical relative order
+      - review_date must still be the final key
     """
     issues: List[str] = []
 
-    present_required = [key for key in parsed.keys() if key in REQUIRED_FIELD_SET]
-    expected_present = [key for key in REQUIRED_FIELDS if key in parsed]
+    keys = parsed_keys_as_strings(parsed)
+
+    present_required = [key for key in keys if key in REQUIRED_FIELD_SET]
+    expected_present = [field for field in REQUIRED_FIELDS if field in keys]
 
     if present_required != expected_present:
         issues.append(
@@ -187,16 +231,19 @@ def validate_field_order(parsed: Dict[str, Any], category: str) -> List[str]:
             f"found={'|'.join(present_required)}"
         )
 
-    if "review_date" in parsed:
-        keys = list(parsed.keys())
-        if category == DAILY_JOURNAL_CATEGORY:
-            # daily_journal may have extra telemetry, but review_date still closes
-            # the canonical metadata block only if it is the final key overall.
-            if keys[-1] != "review_date":
-                issues.append("review_date:not_last")
-        else:
-            if keys[-1] != "review_date":
-                issues.append("review_date:not_last")
+    if "review_date" in keys and keys[-1] != "review_date":
+        issues.append("review_date:not_last")
+
+    if "ctx_grok_reflection" in keys:
+        ctx_index = keys.index("ctx_grok_reflection")
+        bias_index = keys.index("bias_analysis") if "bias_analysis" in keys else None
+        quotes_index = keys.index("quotes") if "quotes" in keys else None
+
+        if bias_index is not None and ctx_index < bias_index:
+            issues.append("ctx_grok_reflection:before_bias_analysis")
+
+        if quotes_index is not None and ctx_index > quotes_index:
+            issues.append("ctx_grok_reflection:after_quotes")
 
     return issues
 
@@ -204,12 +251,25 @@ def validate_field_order(parsed: Dict[str, Any], category: str) -> List[str]:
 def validate_path_field(
     vault_root: Path,
     file_path: Path,
-    parsed: Dict[str, Any],
+    parsed: Dict[Any, Any],
 ) -> Tuple[bool, str, str]:
     expected = vault_relative_posix(vault_root, file_path)
-    found = parsed.get("path", "")
-    found_str = str(found) if found is not None else ""
-    return found_str != expected, expected, found_str
+
+    found = ""
+    for key, value in parsed.items():
+        if as_string_key(key) == "path":
+            found = "" if value is None else str(value)
+            break
+
+    return found != expected, expected, found
+
+
+def get_category(parsed: Dict[Any, Any]) -> str:
+    for key, value in parsed.items():
+        if as_string_key(key) == "category":
+            return "" if value is None else str(value)
+
+    return ""
 
 
 def validate_file(vault_root: Path, file_path: Path) -> ValidationResult:
@@ -234,6 +294,7 @@ def validate_file(vault_root: Path, file_path: Path) -> ValidationResult:
         )
 
     parse_status, parsed = parse_yaml(yaml_text)
+
     if parse_status != "OK" or parsed is None:
         return ValidationResult(
             file=rel_file,
@@ -249,8 +310,7 @@ def validate_file(vault_root: Path, file_path: Path) -> ValidationResult:
             category="",
         )
 
-    category_val = parsed.get("category", "")
-    category = str(category_val) if category_val is not None else ""
+    category = get_category(parsed)
 
     missing = validate_required_fields(parsed)
 
@@ -262,9 +322,9 @@ def validate_file(vault_root: Path, file_path: Path) -> ValidationResult:
     order_issues = validate_field_order(parsed, category)
 
     path_mismatch, expected_path, found_path = validate_path_field(
-        vault_root,
-        file_path,
-        parsed,
+        vault_root=vault_root,
+        file_path=file_path,
+        parsed=parsed,
     )
 
     status = "OK"
@@ -286,13 +346,26 @@ def validate_file(vault_root: Path, file_path: Path) -> ValidationResult:
     )
 
 
+# ---- Vault scan ---------------------------------------------------------------
+
+
+def should_skip_file(path: Path) -> bool:
+    parts = {part.lower() for part in path.parts}
+
+    if ".obsidian" in parts:
+        return True
+
+    if ".git" in parts:
+        return True
+
+    return False
+
+
 def scan_vault(vault_root: Path, include_ok: bool = False) -> List[ValidationResult]:
     results: List[ValidationResult] = []
 
     for md_file in vault_root.rglob("*.md"):
-        parts = {part.lower() for part in md_file.parts}
-
-        if ".obsidian" in parts:
+        if should_skip_file(md_file):
             continue
 
         result = validate_file(vault_root, md_file)
@@ -336,10 +409,10 @@ def write_csv_report(results: List[ValidationResult], out_path: Path) -> None:
                     "status": result.status,
                     "parse_status": result.parse_status,
                     "category": result.category,
-                    "missing_fields": ", ".join(result.missing_fields),
-                    "extra_fields": ", ".join(result.extra_fields),
-                    "type_issues": ", ".join(result.type_issues),
-                    "order_issues": ", ".join(result.order_issues),
+                    "missing_fields": stringify_items(result.missing_fields),
+                    "extra_fields": stringify_items(result.extra_fields),
+                    "type_issues": stringify_items(result.type_issues),
+                    "order_issues": stringify_items(result.order_issues),
                     "path_mismatch": "true" if result.path_mismatch else "false",
                     "expected_path": result.expected_path,
                     "found_path": result.found_path,
@@ -358,7 +431,10 @@ def summarize(results: List[ValidationResult]) -> Tuple[int, int]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Anacostia YAML Schema Sentinel v2.1.0 — 22-field law + order enforcement."
+        description=(
+            "Anacostia YAML Schema Sentinel v2.1.0 — "
+            "22-field law + order enforcement."
+        )
     )
 
     parser.add_argument(
@@ -378,7 +454,10 @@ def main() -> int:
         "--out",
         type=str,
         default="",
-        help="Optional explicit output CSV path. Default writes to war_council/_artifacts/audits/.",
+        help=(
+            "Optional explicit output CSV path. "
+            "Default writes to war_council/_artifacts/audits/."
+        ),
     )
 
     args = parser.parse_args()
@@ -389,7 +468,7 @@ def main() -> int:
         print(f"❌ Vault path not found: {vault_root}")
         return 2
 
-    results = scan_vault(vault_root, include_ok=args.include_ok)
+    results = scan_vault(vault_root=vault_root, include_ok=args.include_ok)
     total, failures = summarize(results)
 
     if args.out.strip():
@@ -401,7 +480,7 @@ def main() -> int:
             / f"yaml_validation_report_{now_stamp()}.csv"
         )
 
-    write_csv_report(results, out_path)
+    write_csv_report(results=results, out_path=out_path)
 
     print(f"🔍 Vault: {vault_root}")
     print(f"📄 Report: {out_path}")
