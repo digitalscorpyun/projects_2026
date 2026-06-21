@@ -1,0 +1,424 @@
+{
+  "pass_metadata": {
+    "pass_type": "manifest-only planning pass, no filesystem changes executed",
+    "generated_date": "2026-06-20",
+    "repo_root": "C:\\Users\\digitalscorpyun\\projects_2026",
+    "scope_root": "C:\\Users\\digitalscorpyun\\projects_2026\\avm",
+    "zero_edit_guarantee": true,
+    "zero_edit_scope": "No .py, .json, or .yaml file contents are modified in this pass. No import statements are rewritten. No semantic code edits. Filesystem moves only (git mv), except items with action 'inspect_first' or 'keep', which are not touched at all -- not moved, not edited.",
+    "execution_method": "git mv for every 'move' and 'archive' action, preserving history. Destination directories are created (mkdir) before the corresponding git mv, never via delete+recreate.",
+    "pending_approval": false,
+    "executed_date": "2026-06-21",
+    "execution_status": "All 51 originally-listed items executed via git mv on 2026-06-21, plus 1 corrective item (time_audit.py, see findings.time_audit_omission_correction) approved and executed the same day. 52 total git mv operations. concept_taxonomy.yaml, vs_enc_invocation_law.yaml, ontology_core.yaml (all action: keep/inspect_first) and vault_logs/ remain untouched as specified."
+  },
+  "findings": {
+    "time_audit_omission_correction": "time_audit.py was flagged as looking broken/incomplete during the original scan but was never given a manifest entry -- an oversight caught after execution, when it was the only file left at avm/ root besides the manifest files themselves. User chose destination avm/spec/ (grouped with the other self-evidently unfinished/WIP scripts, technofeudal_bias_audit.py and cg_scribe.py) over avm/archive/ or leaving it in place. Executed via git mv on 2026-06-21. See the corresponding items entry below.",
+    "ctx_grok_proto_import_dependency_report": "Searched the full projects_2026 tree for references to ctx_grok_proto / CTXGrokProto. Exactly one Python import exists: synapse_engine.py line 51, `from scripts.ctx_grok_proto import CTXGrokProto`, inside the run_synapse() function. This import targets a top-level `scripts` package that does not exist anywhere in projects_2026 (only avm/ctx_grok_proto.py exists, with no 'scripts' wrapper package). The same function also imports `from avm_ops.scripts.vs_enc_orchestrator import VSEncOrchestrator` on line 52, which is equally non-existent -- both are leftover references to the old C:\\Users\\digitalscorpyun\\projects_2025\\avm_ops\\scripts\\ layout (consistent with the stale DEFAULT_SYNAPSE and path_resolver.py FORGE_ROOT constants pointing at projects_2025). Conclusion: run_synapse() is already non-functional today (ModuleNotFoundError on call) regardless of any reorg. ctx_grok_proto.py has no live, working Python import dependency at its current location. Separately, config/vs_enc_invocation_law.yaml lists 'ctx_grok_proto' as the allowed_agents entry for all five invocation types -- this is a governance-config reference by string name, not a filesystem path, so it is unaffected by where the file physically lives. Per your rule, since no working dependency was found, ctx_grok_proto.py is still being kept with the core cluster this pass (least disruption, consistent with 'if in doubt, keep with core') and flagged as prototype debt rather than archived.",
+    "ontology_core_header_mismatch": "config/ontology_core.yaml's own header comment reads '# war_council/avm_syndicate/configs/ontology_core.yaml', implying its intended canonical home is under war_council/, not avm/config/. No code references this file by path (confirmed via repo-wide grep), so nothing breaks today regardless of its actual location. Per your instruction, marked inspect_first: not moved this pass, flagged for a later Vault-governance decision on whether avm/config/ or a war_council path is correct.",
+    "synapse_engine_path_bootstrap_side_effect": "synapse_engine.py's _bootstrap_path() computes project_root as the parent of the parent of its own file (os.path.dirname(__file__) + '/..'). Today that resolves to projects_2026/. After the proposed move to avm/core/synapse_engine.py, the same unmodified code will resolve project_root to avm/ instead. This is a pure side-effect of relocation, not a code edit. It does not change functional behavior in practice because the 'scripts' and 'avm_ops.scripts' packages it tries to add to sys.path do not exist at either location -- the function is broken before and after the move. Flagged for awareness, not treated as a blocker."
+  },
+  "items": [
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vs_enc.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\vs_enc.py",
+      "action": "move",
+      "reason": "Root orchestrator (CANONICAL) for the AVM Syndicate engine; imported as a flat sibling by qwen_echo.py, kimi_deux.py, scorpyun_annotator.py, scholarly_dive.py, ctx_grok.py.",
+      "risk": "None if moved together with all other core-cluster files in the same git mv batch -- sibling imports remain valid since relative directory structure is preserved."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\watsonx_client.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\watsonx_client.py",
+      "action": "move",
+      "reason": "Universal Watsonx bridge; imported as a flat sibling by qwen_echo.py, kimi_deux.py, scorpyun_annotator.py, scholarly_dive.py, ctx_grok_proto.py, test_synapse_manifest.py.",
+      "risk": "None if moved with the full core cluster in the same batch."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\path_resolver.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\path_resolver.py",
+      "action": "move",
+      "reason": "Sole consumer is synapse_engine.py (`from path_resolver import resolve`); must stay sibling to it.",
+      "risk": "Contains stale FORGE_ROOT constant pointing at C:\\Users\\digitalscorpyun\\projects_2025\\avm_ops -- pre-existing staleness, unrelated to and unaffected by this move."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\synapse_engine.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\synapse_engine.py",
+      "action": "move",
+      "reason": "Synapse execution CLI; imports path_resolver as a flat sibling and holds the hardcoded absolute reference to config/vs_enc_invocation_law.yaml.",
+      "risk": "See findings.synapse_engine_path_bootstrap_side_effect -- _bootstrap_path() will resolve a different project_root after the move, but the function is already non-functional today (run_synapse() depends on nonexistent 'scripts' and 'avm_ops.scripts' packages), so this is a non-functional side effect, not a regression."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\ctx_grok.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\ctx_grok.py",
+      "action": "move",
+      "reason": "Unified diagnostic engine; self-bootstraps sys.path to its own directory then imports vs_enc as a sibling. Holds the hardcoded absolute reference to config/concept_taxonomy.yaml.",
+      "risk": "None -- vs_enc.py moves to the same directory in this batch, and config/concept_taxonomy.yaml is staying at its current absolute path (action: keep)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\ctx_grok_proto.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\ctx_grok_proto.py",
+      "action": "move",
+      "reason": "Early prototype of ctx_grok.py. See findings.ctx_grok_proto_import_dependency_report: its only Python-level reference (synapse_engine.py) is via an already-nonexistent 'scripts' package, so no live dependency was found. Kept with core cluster per your instruction rather than archived, since the dependency could not be ruled fully inert (governance YAML still names it as an allowed_agent).",
+      "risk": "Flagged as prototype debt. No import edits made. If later archived, vs_enc_invocation_law.yaml's allowed_agents lists would need a separate governance review (out of scope for this pass)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\qwen_echo.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\qwen_echo.py",
+      "action": "move",
+      "reason": "Flagship refinery client; imports watsonx_client and vs_enc as flat siblings.",
+      "risk": "None if moved with the full core cluster in the same batch."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\kimi_deux.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\kimi_deux.py",
+      "action": "move",
+      "reason": "Training client via VS-ENC orchestrator; imports watsonx_client and vs_enc as flat siblings.",
+      "risk": "None if moved with the full core cluster in the same batch."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\scorpyun_annotator.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\scorpyun_annotator.py",
+      "action": "move",
+      "reason": "Annotation emitter; imports watsonx_client and vs_enc as flat siblings.",
+      "risk": "None if moved with the full core cluster in the same batch."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\scholarly_dive.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\scholarly_dive.py",
+      "action": "move",
+      "reason": "Scholarly synthesis engine; imports vs_enc and watsonx_client as flat siblings. Largest file in avm/ (47KB), most actively developed core script after anacostia_sentry.py.",
+      "risk": "None if moved with the full core cluster in the same batch."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\test_synapse_manifest.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\core\\test_synapse_manifest.py",
+      "action": "move",
+      "reason": "Manual smoke-test script (not pytest) for the watsonx_client pipeline; imports watsonx_client as a flat sibling.",
+      "risk": "None if moved with the full core cluster in the same batch."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_yaml_normalizer.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_tools\\vault_yaml_normalizer.py",
+      "action": "move",
+      "reason": "Vault YAML normalizer CLI, most recently modified file in avm/ (2026-06-13). No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_yaml_validator.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_tools\\vault_yaml_validator.py",
+      "action": "move",
+      "reason": "Canonical YAML schema validator CLI, also modified 2026-06-13. No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\mw_archive.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_tools\\mw_archive.py",
+      "action": "move",
+      "reason": "Mnemonic Warden -- read-only vault continuity tool. No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\sanctified_linker.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_tools\\sanctified_linker.py",
+      "action": "move",
+      "reason": "Sacred-tech linking ritual CLI for the vault. No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_yaml_normalizer_report.csv",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_tools\\_reports\\vault_yaml_normalizer_report.csv",
+      "action": "move",
+      "reason": "Generated output of vault_yaml_normalizer.py, not source -- belongs with its producing tool's reports folder.",
+      "risk": "None -- regenerable artifact. Recommend adding avm/vault_tools/_reports/ to .gitignore in a future pass (not done now, would be an edit)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\yaml_errors_only.csv",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_tools\\_reports\\yaml_errors_only.csv",
+      "action": "move",
+      "reason": "Generated output of vault_yaml_validator.py, not source.",
+      "risk": "None -- regenerable artifact."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\pgn_ingest.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\chess\\pgn_ingest.py",
+      "action": "move",
+      "reason": "PGN to Vault game ingestion engine. No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\chess_analyze.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\chess\\chess_analyze.py",
+      "action": "move",
+      "reason": "Post-ingest YAML enricher, reads notes produced by pgn_ingest.py via the filesystem (not via Python import). No internal cross-imports.",
+      "risk": "None -- standalone script. Filesystem hand-off with pgn_ingest.py is via vault note files, unaffected by either script's own location."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\wx_chess_analyst.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\chess\\wx_chess_analyst.py",
+      "action": "move",
+      "reason": "Canonical production arbiter (engine arbitration + verdict + LLM synthesis), explicitly marked GOVERNANCE-LOCKED in its own header. Connects to IBM Watsonx directly rather than via core/watsonx_client.py -- a parallel code path, noted but out of scope to consolidate this pass.",
+      "risk": "None -- standalone script, no internal cross-imports found."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\anacostia_sentry.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\monitoring\\anacostia_sentry.py",
+      "action": "move",
+      "reason": "Infra observer; currently the most actively modified file in avm/ per git status. Resolves its config and log directory via Path(__file__).parent, so it is safe to relocate as long as its sibling config/log files move with it.",
+      "risk": "None for the script itself. See separate vault_logs entry below for the generated-log caveat."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\sentry_config.json",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\monitoring\\sentry_config.json",
+      "action": "move",
+      "reason": "Externalized config for anacostia_sentry.py, must remain a sibling (loaded via BASE_DIR = Path(__file__).parent).",
+      "risk": "Currently untracked by git (new file) -- git mv will add+stage it at the new path in one step."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\sentry_usage.md",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\monitoring\\sentry_usage.md",
+      "action": "move",
+      "reason": "Usage documentation for anacostia_sentry.py + sentry_config.json, keep as a sibling for discoverability.",
+      "risk": "Currently untracked by git (new file)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vault_logs\\",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\monitoring\\vault_logs\\",
+      "action": "keep",
+      "reason": "Generated, gitignored log directory for anacostia_sentry.py. Out of scope for git mv since it is not tracked.",
+      "risk": "anacostia_sentry.py will create a fresh vault_logs/ at the new monitoring/ location on its next run (BASE_DIR / 'vault_logs', mkdir(exist_ok=True)). Existing log file avm/vault_logs/sentry_report_2026-06-20.log will NOT automatically follow -- it will sit orphaned at the old path unless manually copied. Low stakes given the 7-day rotation policy, but flagged since it is a silent behavior, not an error."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\passphrase_forge.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\tools\\passphrase_forge.py",
+      "action": "move",
+      "reason": "Generic passphrase generator utility. No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\search_query_helper.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\tools\\search_query_helper.py",
+      "action": "move",
+      "reason": "Search query builder utility. No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\write_notes.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\tools\\write_notes.py",
+      "action": "move",
+      "reason": "Manifest-driven vault note writer (21-field schema), the keeper over note_generator.py per your decision 4. No internal cross-imports.",
+      "risk": "None -- standalone script. References an external absolute MANIFEST_PATH under C:\\Users\\digitalscorpyun\\projects_2025\\avm_ops\\, which is stale but unrelated to and unaffected by this move."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_001.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_001.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series. No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_002.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_002.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_003.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_003.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_004.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_004.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_005.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_005.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_006.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_006.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_007.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_007.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_008.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_008.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_009.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_009.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drill_010.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\env_vars\\drill_010.py",
+      "action": "move",
+      "reason": "Env-var study drill, part of the drill_001-010 series.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\net_plus_drill_1.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\drills\\networking\\net_plus_drill_1.py",
+      "action": "move",
+      "reason": "OSI-layer flashcard/quiz drill, different study topic from the env_vars series so split into its own subfolder.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\technofeudal_bias_audit.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\spec\\technofeudal_bias_audit.py",
+      "action": "move",
+      "reason": "Self-labeled 'v0.1 (Spec Phase)' in its own header. No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\cg_scribe.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\spec\\cg_scribe.py",
+      "action": "move",
+      "reason": "Self-labeled 'VALIDATION SKELETON' in its own header. No internal cross-imports.",
+      "risk": "None -- standalone script."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\vs_enc_orchestrator.DEAD.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\archive\\vs_enc_orchestrator.DEAD.py",
+      "action": "archive",
+      "reason": "Already self-marked dead by a prior commit (af61a9b); superseded by core/vs_enc.py.",
+      "risk": "None -- nothing imports this file (confirmed via repo-wide grep)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\note_generator.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\archive\\note_generator.py",
+      "action": "archive",
+      "reason": "Per your decision 4: write_notes.py is the keeper. note_generator.py is an earlier, simpler draft of the same vault-note-writing function with no manifest-driven schema.",
+      "risk": "None -- nothing imports this file (confirmed via repo-wide grep)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\od_comply.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\archive\\placeholders\\od_comply.py",
+      "action": "archive",
+      "reason": "Per your decision 1: archive, do not delete. 0-byte file, untouched since the 2025-to-2026 migration commit (ef4fda6), never implemented. Referenced only by name (as an agent label, 'OD-COMPLY') in core/test_synapse_manifest.py's prompt text -- not a Python import.",
+      "risk": "None -- empty file, no import dependency."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\validator.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\archive\\placeholders\\validator.py",
+      "action": "archive",
+      "reason": "Per your decision 1. 0-byte file, untouched since migration commit ef4fda6, never implemented.",
+      "risk": "None -- empty file, no import dependency (confirmed via repo-wide grep)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\synapse_router.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\archive\\placeholders\\synapse_router.py",
+      "action": "archive",
+      "reason": "Per your decision 1. 0-byte file, untouched since migration commit ef4fda6, never implemented.",
+      "risk": "None -- empty file, no import dependency (confirmed via repo-wide grep)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\agent_manifest.yaml",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\archive\\placeholders\\agent_manifest.yaml",
+      "action": "archive",
+      "reason": "Per your decision 1. 0-byte file, untouched since config migration commit af61a9b, never populated.",
+      "risk": "None -- empty file, no code reads this path (confirmed via repo-wide grep)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\model_profiles.json",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\archive\\placeholders\\model_profiles.json",
+      "action": "archive",
+      "reason": "Per your decision 1. 0-byte file, untouched since config migration commit af61a9b, never populated.",
+      "risk": "None -- empty file, no code reads this path (confirmed via repo-wide grep)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\env_loader.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\archive\\placeholders\\env_loader.py",
+      "action": "archive",
+      "reason": "Per your decision 1. 0-byte file, untouched since config migration commit af61a9b, never implemented. A .py file that happened to live in config/ rather than the script root.",
+      "risk": "None -- empty file, no import dependency (confirmed via repo-wide grep)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\concept_taxonomy.yaml",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\concept_taxonomy.yaml",
+      "action": "keep",
+      "reason": "core/ctx_grok.py line 28 hardcodes the absolute path C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\concept_taxonomy.yaml. Must stay at exactly this path or that line needs editing (out of scope -- zero-edit pass).",
+      "risk": "None as long as it is not moved. Moving it would break ctx_grok.py at runtime with no exception raised at import time (only when the YAML load is attempted)."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vs_enc_invocation_law.yaml",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vs_enc_invocation_law.yaml",
+      "action": "keep",
+      "reason": "core/synapse_engine.py lines 35-37 hardcode the absolute path C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vs_enc_invocation_law.yaml. Must stay at exactly this path or those lines need editing (out of scope -- zero-edit pass).",
+      "risk": "None as long as it is not moved. Also governs allowed_agents lists naming ctx_grok_proto -- unaffected by filesystem location since it is referenced by string name, not path."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\ontology_core.yaml",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\ontology_core.yaml",
+      "action": "inspect_first",
+      "reason": "Per your decision 2: not moved into war_council, the Vault, or any other cross-jurisdiction path this pass. Preserved in place at avm/config/. The file's own header comment claims its canonical home is war_council/avm_syndicate/configs/ontology_core.yaml, which mismatches its actual current location.",
+      "risk": "None for this pass -- no code references this file by path (confirmed via repo-wide grep), so leaving it untouched is fully safe. Flagged for a later Vault-governance review to decide the correct jurisdiction and resolve the header/location mismatch."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vault_restructure_phase_01.yaml",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vault_restructure\\vault_restructure_phase_01.yaml",
+      "action": "move",
+      "reason": "Historical War-Council-authorized vault migration manifest (dry_run: false, already executed). No code references this file by path.",
+      "risk": "None -- grouping with the other three phase files for clarity, does not affect any reader since nothing reads it by path."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vault_restructure_phase_02.yaml",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vault_restructure\\vault_restructure_phase_02.yaml",
+      "action": "move",
+      "reason": "Historical War-Council-authorized vault migration manifest (dry_run: false, already executed). No code references this file by path.",
+      "risk": "None."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vault_restructure_phase_03_audit.yaml",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vault_restructure\\vault_restructure_phase_03_audit.yaml",
+      "action": "move",
+      "reason": "Historical War-Council-authorized vault audit manifest (dry_run: true). No code references this file by path.",
+      "risk": "None."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vault_restructure_phase_04.yaml",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\\vault_restructure\\vault_restructure_phase_04.yaml",
+      "action": "move",
+      "reason": "Historical War-Council-authorized vault migration manifest (dry_run: false, already executed). No code references this file by path.",
+      "risk": "None."
+    },
+    {
+      "source": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\time_audit.py",
+      "destination": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\spec\\time_audit.py",
+      "action": "move",
+      "reason": "Corrective addition, see findings.time_audit_omission_correction. Mixes a WSL-style /mnt/c/Users/digitalscorpyun/notification_log.txt path with the Windows-path conventions used everywhere else in avm/, and calls current_time.offset_hours as a bare attribute rather than a method -- looks unfinished. User decision: group with avm/spec/ rather than archive/ or leave in place.",
+      "risk": "None -- standalone script, no internal cross-imports, no other code references time_audit.py by path."
+    }
+  ],
+  "out_of_scope_untouched": [
+    {
+      "path": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\__pycache__\\",
+      "reason": "Generated Python bytecode cache, already gitignored. Not part of any manifest action."
+    },
+    {
+      "path": "C:\\Users\\digitalscorpyun\\projects_2026\\avm\\_debug\\",
+      "reason": "Generated debug receipts directory (scholarly_dive/ subfolder, 658 files), already gitignored via 'avm/_debug/'. Not part of any manifest action."
+    }
+  ]
+}

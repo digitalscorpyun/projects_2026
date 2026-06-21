@@ -1,0 +1,40 @@
+{
+  "_comment": "Anacostia Sentry v1.3 Lean Watcher — Config parsed once at startup",
+  "script_meta": {
+    "version": "1.3.0",
+    "codename": "Lean Watcher",
+    "compliance": "WC-INF-2026-01-16-V028",
+    "jurisdiction": "Anacostia Training Grounds"
+  },
+  "paths": {
+    "log_dir": "vault_logs",
+    "max_log_days": 7,
+    "config_file": "sentry_config.json"
+  },
+  "thresholds": {
+    "cpu_warn": 80.0,
+    "ram_warn": 85.0,
+    "disk_warn": 90.0,
+    "disk_critical": 97.0,
+    "swap_rate_warn_mbps": 50.0
+  },
+  "features": {
+    "process_cmdline_capture": false,
+    "network_io_delta": true,
+    "uptime_aware_alerting": true,
+    "alert_deduplication": true,
+    "dedup_window_minutes": 15,
+    "boot_settle_seconds": 300,
+    "self_memory_report": true
+  },
+  "process_snapshot": {
+    "top_limit": 10,
+    "exclude_system_idle": true,
+    "exclude_self": true
+  },
+  "output": {
+    "json_indent": 2,
+    "console_summary": true,
+    "alert_to_console": true
+  }
+}
