@@ -1005,6 +1005,7 @@ https://ground.news/article/big-name-artists-musicians-journalists-gather-in-sup
 https://ground.news/article/big-ten-announces-137-billion-in-revenue-distribution-to-18-member-schools-in-fiscal-year-2024-25
 https://ground.news/article/bill-gates-tells-house-panel-i-should-have-never-met-with-jeffrey-epstein
 https://ground.news/article/bill-maher-bashes-acts-like-c-plus-c-music-factory-for-dumping-trump-250-event-dont-love-america
+https://ground.news/article/bill-maher-obamas-850m-library-looks-like-aliens-built-it-in-dubai-calls-audience-liars
 https://ground.news/article/bill-maher-to-receive-mark-twain-prize-for-american-humor-report
 https://ground.news/article/billie-jean-king-father-greg-boyle-among-cal-state-la-commencement-honorees
 https://ground.news/article/billionaire-steyers-spending-binge-dwarfs-rival-campaigns-in-california-governors-race
@@ -3183,6 +3184,7 @@ https://ground.news/article/trump-tells-aides-to-prepare-for-lengthy-hormuz-bloc
 https://ground.news/article/trump-tells-congress-hostilities-with-iran-have-terminated-as-conflict-hits-60-day-deadline_ec27ef
 https://ground.news/article/trump-thanks-secret-service-renews-call-for-ballroom-after-white-house-shooting
 https://ground.news/article/trump-there-is-no-reason-to-raise-fed-rates
+https://ground.news/article/trump-threatens-iran-on-lebanon-amid-nuclear-talks
 https://ground.news/article/trump-threatens-to-obliterate-iran-power-plants-if-strait-of-hormuz-is-not-reopened-within-48-hours_0013c4
 https://ground.news/article/trump-threatens-to-obliterate-iran-power-plants-if-strait-of-hormuz-is-not-reopened-within-48-hours_26a15a
 https://ground.news/article/trump-threatens-to-obliterate-irans-energy-and-water-infrastructure-if-talks-fail_225309
@@ -3540,6 +3542,7 @@ https://ground.news/article/utah-residents-seek-referendum-to-block-100b-ai-data
 https://ground.news/article/utah-supreme-court-justice-diana-hagen-resigns-from-bench-after-questions-on-relationships_029921
 https://ground.news/article/uw-system-president-jay-rothman-was-told-to-quit-or-be-fired-refuses-to-leave
 https://ground.news/article/va-conducted-internal-investigations-into-employees-who-attended-vigil-for-alex-pretti
+https://ground.news/article/vance-and-iranian-officials-set-to-launch-talks-in-switzerland_c3715b
 https://ground.news/article/vance-anti-fraud-task-force-suspends-221-california-hospice-and-healthcare-providers-so-far_6cdd82
 https://ground.news/article/vance-delays-trip-to-switzerland-to-lead-new-us-talks-with-iran-on-its-nuclear-program_6db900
 https://ground.news/article/vance-faces-questions-on-the-view_f29ade
@@ -5729,6 +5732,8 @@ https://thegrio.com/2026/06/20/natvie-son-awards-uplift-queenerness-blacknees-ju
 https://thegrio.com/2026/06/20/olandria-carthen-rolling-stone-africa-cover
 https://thegrio.com/2026/06/20/tay-keith-family-issues-statement-on-his-death
 https://thegrio.com/2026/06/21/dia-de-los-negros-explainer-juneteenth-mexico-black-seminoles
+https://thegrio.com/2026/06/21/king-overton-swim-camp-death
+https://thegrio.com/2026/06/21/sza-ai-music-warner-bros-discovery-ai-advertising
 https://www.artificialintelligence-news.com/news/5-best-practices-to-secure-ai-systems
 https://www.artificialintelligence-news.com/news/5-top-cloud-migration-software-for-infrastructure-as-code-iac
 https://www.artificialintelligence-news.com/news/a-guide-to-apis-and-mcps-and-mcp-gateways
