@@ -69,13 +69,21 @@ def load_cfg() -> Dict[str, Any]:
 CFG = load_cfg()
 
 MAX_AGE_DAYS = int(CFG.get("cutoff_days", 14))
+# Not applied as a filter: "words" is title word count (see collect_rss/collect_static),
+# never full article length, so a 200-word minimum would reject every row.
 MIN_WORDS = int(CFG.get("min_words", 200))
 CONCURRENCY = int(CFG.get("concurrency", 12))
 REQ_TIMEOUT = int(CFG.get("timeout_sec", 25))
 OUTPUT_CSV = CFG.get("output_csv", "sunday_lion_scraper_output.csv")
 
+REJECT_UNDATED = bool(CFG.get("reject_undated", False))
+
 KEYWORDS = [str(k).strip() for k in CFG.get("keywords", []) if str(k).strip()]
-KW_RE_LIST = [re.compile(re.escape(k), re.IGNORECASE) for k in KEYWORDS]
+KW_RE_LIST = [re.compile(rf"\b{re.escape(k)}\b", re.IGNORECASE) for k in KEYWORDS]
+
+# Author/tag/category index pages aren't articles; collect_static's selector
+# (built for headline anchors) sometimes grabs these incidentally.
+JUNK_HREF_PATTERN = re.compile(r"/(author|tag|tags|category|categories|topic|topics|page)/", re.IGNORECASE)
 
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -197,6 +205,9 @@ async def collect_static(session, source):
         if not href or not title:
             continue
 
+        if JUNK_HREF_PATTERN.search(href):
+            continue
+
         link = normalize_url(urljoin(url, href))
 
         rows.append({
@@ -210,6 +221,23 @@ async def collect_static(session, source):
         })
 
     return rows
+
+
+def _matches_keywords(title: str) -> bool:
+    if not KW_RE_LIST:
+        return True
+    return any(p.search(title) for p in KW_RE_LIST)
+
+
+def _within_cutoff(date_str: str) -> bool:
+    if date_str == "Undated":
+        return not REJECT_UNDATED
+    try:
+        published = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return not REJECT_UNDATED
+    age_days = (datetime.now(timezone.utc) - published).days
+    return age_days <= MAX_AGE_DAYS
 
 
 async def scrape():
@@ -231,7 +259,21 @@ async def scrape():
 
             results.extend(rows)
 
-    return results
+    seen_urls = set()
+    filtered = []
+
+    for row in results:
+        if row["url"] in seen_urls:
+            continue
+        if not _matches_keywords(row["title"]):
+            continue
+        if not _within_cutoff(row["date"]):
+            continue
+
+        seen_urls.add(row["url"])
+        filtered.append(row)
+
+    return filtered
 
 
 def write_csv(rows):
