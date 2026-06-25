@@ -52,7 +52,7 @@ DEFAULT_REQUIRED_KEYS = {
     "synapses",
     "key_themes",
     "bias_analysis",
-    "grok_ctx_reflection",  # note: some legacy notes may use ctx_grok_reflection
+    "ctx_grok_reflection",  # note: some legacy notes may still use the stale grok_ctx_reflection
     "quotes",
     "adinkra",
     "linked_notes",

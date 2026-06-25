@@ -697,7 +697,7 @@ def run_refinery() -> None:
                 "tags": ["echo", "distillation", resolved_style.lower()],
                 "summary": f"Distillation via {resolved_style} protocol.",
                 "external_refs": [str(source_path)],
-                "grok_ctx_reflection": f"Refinery output: {resolved_style} protocol applied.",
+                "ctx_grok_reflection": f"Refinery output: {resolved_style} protocol applied.",
             },
         )
 

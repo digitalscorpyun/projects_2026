@@ -74,9 +74,9 @@ class VSEncOrchestrator:
                 for t in params.get("key_themes", ["synthesis"])
             ],
             "bias_analysis": params.get("bias_analysis", "Analytical stance pending."),
-            "grok_ctx_reflection": params.get(
-                "grok_ctx_reflection",
-                "Deterministic node.",  # RESTORED: Key Name
+            "ctx_grok_reflection": params.get(
+                "ctx_grok_reflection",
+                "Deterministic node.",
             ),
             "quotes": params.get("quotes", []),
             "adinkra": params.get("adinkra", ["Eban"]),

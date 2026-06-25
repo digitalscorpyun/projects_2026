@@ -142,7 +142,7 @@ def run_annotator():
                 "synapses": SAFE_SYNAPSES,
                 "key_themes": ["symbolism", "resistance", "power_codes"],
                 "summary": f"SankofaCut annotation of {title} ({location}) by {author}.",
-                "grok_ctx_reflection": "Interpretive literary analysis node.",
+                "ctx_grok_reflection": "Interpretive literary analysis node.",
                 "adinkra": ["fawohodie", "mate_masie"],
                 "linked_notes": ["war_council/sankofa_spine.md"],
             },

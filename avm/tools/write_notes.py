@@ -25,7 +25,7 @@ YAML_FIELDS = {
     "synapses": ["no_synapses_added"],
     "key_themes": ["theme_not_identified"],
     "bias_analysis": "Bias analysis not yet generated.",
-    "grok_ctx_reflection": "Context reflection not yet generated.",
+    "ctx_grok_reflection": "Context reflection not yet generated.",
     "quotes": ["No quotes captured yet."],
     "adinkra": "duafe",
     "linked_notes": ["none_linked_yet"],
