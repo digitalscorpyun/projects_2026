@@ -1,5 +1,5 @@
 # ==============================================================================
-# ✶⌁✶ ctx_grok.py — THE UNIFIED DIAGNOSTIC ENGINE v0.2.7.2 [HARDENED]
+# ✶⌁✶ ctx_grok.py — THE UNIFIED DIAGNOSTIC ENGINE v0.2.7.3 [HARDENED]
 # ==============================================================================
 # ROLE: Unified Full-Spectrum Diagnostic Emission (Structural/Semantic/Drift).
 # ENGINE: Deterministic Logic (Python 3.10+)
@@ -11,30 +11,42 @@ import argparse
 import math
 import re
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 import yaml
 
 # JURISDICTIONAL IMPORT: Kernel v1.0.0
 sys.path.append(str(Path(__file__).parent))
+
 try:
     from vs_enc import VSEncOrchestrator
 except ImportError:
     VSEncOrchestrator = None
 
+try:
+    from ctx_grok_proto import CTXGrokProto
+except ImportError:
+    CTXGrokProto = None
+
+
 # CANONICAL CONSTANTS
-DEFAULT_VAULT_ROOT = r"C:\Users\digitalscorpyun\sankofa_temple\Anacostia"
-DEFAULT_TAXONOMY = (
-    r"C:\\Users\\digitalscorpyun\\projects_2026\\avm\\config\concept_taxonomy.yaml"
+DEFAULT_VAULT_ROOT = Path(
+    r"C:\Users\digitalscorpyun\sankofa_temple\Anacostia"
 )
+
+DEFAULT_TAXONOMY = Path(
+    r"C:\Users\digitalscorpyun\projects_2026\avm\config\concept_taxonomy.yaml"
+)
+
 ARTIFACT_DIR = "war_council/_artifacts/ctx_grok"
 
 
 class DiagnosticEngine:
     def __init__(self, vault_root: Path, taxonomy: dict):
         self.vault_root = vault_root
-        self.taxonomy = taxonomy
-        self.classes = taxonomy.get("classes", {})
+        self.taxonomy = taxonomy if isinstance(taxonomy, dict) else {}
+        self.classes = self.taxonomy.get("classes", {})
         self.snapshot = {}
         self.timestamp = datetime.now().isoformat()
 
@@ -45,40 +57,82 @@ class DiagnosticEngine:
         except ValueError:
             return absolute_path.name
 
-    def _discovery(self):
+    def _discovery(self) -> list[Path]:
         """Pass 1: File Discovery & Metadata Intake."""
         return list(self.vault_root.rglob("*.md"))
 
-    def _classification(self, path: Path):
-        """Pass 2: Taxonomy Enforcement (No Heuristics)."""
-        rel_path = self._get_rel_path(path)
+    def _read_note(self, path: Path) -> tuple[str, dict]:
+        """
+        Read Markdown note content and extract YAML frontmatter safely.
 
-        # Metadata Extraction (HARDENED via WC-DIR-2026-01-08-V117)
+        Frontmatter is only parsed when the file begins with '---'.
+        Body delimiters later in the note are ignored for frontmatter purposes.
+        """
+        content = ""
+
         try:
             content = path.read_text(encoding="utf-8", errors="ignore")
-            parts = content.split("---")
-            meta = yaml.safe_load(parts[1]) if len(parts) >= 3 else {}
-            # AUTHORIZED BOUNDARY: Type validation to prevent list-attribute error
-            if not isinstance(meta, dict):
-                meta = {}
         except Exception:
-            meta = {}
+            return content, {}
+
+        meta = {}
+
+        if content.startswith("---"):
+            parts = content.split("---", 2)
+            if len(parts) >= 3:
+                try:
+                    loaded = yaml.safe_load(parts[1])
+                    if isinstance(loaded, dict):
+                        meta = loaded
+                except Exception:
+                    meta = {}
+
+        return content, meta
+
+    def _normalize_tags(self, tags) -> list[str]:
+        """Normalize YAML tag values into a deterministic list of strings."""
+        if isinstance(tags, str):
+            return [tags]
+
+        if isinstance(tags, list):
+            return [tag for tag in tags if isinstance(tag, str)]
+
+        return []
+
+    def _classification(self, path: Path) -> None:
+        """Pass 2: Taxonomy Enforcement."""
+        rel_path = self._get_rel_path(path)
+        content, meta = self._read_note(path)
 
         title = meta.get("title", path.stem)
-        tags = meta.get("tags", [])
+        if not isinstance(title, str):
+            title = path.stem
+
+        stem = path.stem
 
         align = "unclassified"
         source = "none"
 
-        # Strict Taxonomy Lookup
+        # Strict taxonomy lookup: concept_taxonomy.yaml's `include` lists
+        # are curated note titles/filenames (a declarative, named allowlist
+        # per the taxonomy's own "no heuristic promotion permitted" /
+        # "exclusion is intentional" principles) -- not tag vocabulary.
+        # Match against the note's title or filename stem, both since the
+        # lists mix slug-style and Title Case entries.
         for class_name, cfg in self.classes.items():
-            if any(tag in tags for tag in cfg.get("include_tags", [])):
-                align, source = class_name, "taxonomy_match"
+            include_list = cfg.get("include", [])
+            if not isinstance(include_list, list):
+                include_list = []
+
+            if title in include_list or stem in include_list:
+                align = class_name
+                source = "taxonomy_match"
                 break
 
-        # Calculate Gravity (v0.2.3 Logic)
+        # Calculate gravity from wikilink density.
         links = re.findall(r"\[\[(.*?)\]\]", content)
         raw_gravity = len(links) * 1.0
+
         norm_gravity = (
             round(raw_gravity / math.log(len(content) + 1.1), 4)
             if len(content) > 0
@@ -93,56 +147,112 @@ class DiagnosticEngine:
             "norm_gravity": norm_gravity,
         }
 
-    def run_pipeline(self):
+    def run_pipeline(self) -> str:
         files = self._discovery()
-        for f in files:
-            if "_artifacts" in str(f):
+
+        for file_path in files:
+            try:
+                rel_parts = file_path.relative_to(self.vault_root).parts
+            except ValueError:
+                rel_parts = file_path.parts
+
+            if "_artifacts" in rel_parts:
                 continue
-            self._classification(f)
+
+            self._classification(file_path)
+
         return self._calculate_drift()
 
-    def _calculate_drift(self):
+    def _calculate_drift(self) -> str:
         return "Baseline established."
 
 
 class StubAgent:
-    def run(self, text: str):
+    def run(self, text: str) -> str:
         return text
 
 
-def main():
-    parser = argparse.ArgumentParser(description="CTX-GROK v0.2.7.2")
-    parser.add_argument("--vault", type=Path, default=Path(DEFAULT_VAULT_ROOT))
+class CTXGrokProtoAdapter:
+    """
+    Adapts CTXGrokProto's dict-returning .run() to the plain-string
+    contract VSEncOrchestrator.run() expects for payload['content'].
+    """
+
+    def __init__(self) -> None:
+        self._agent = CTXGrokProto()
+
+    def run(self, text: str) -> str:
+        result = self._agent.run(text, task="structural_alignment_summary")
+        output = result.get("output", {})
+
+        if isinstance(output, dict):
+            return "\n".join(f"- **{key}**: {value}" for key, value in output.items())
+
+        return str(output)
+
+
+def load_taxonomy(path: Path) -> dict:
+    """Load taxonomy YAML safely."""
+    try:
+        with path.open("r", encoding="utf-8") as file:
+            loaded = yaml.safe_load(file)
+            return loaded if isinstance(loaded, dict) else {}
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Taxonomy file not found: {path}") from None
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Invalid taxonomy YAML: {path}\n{exc}") from exc
+
+
+def build_alignment_report(snapshot: dict) -> str:
+    """Build the Structural Alignment Map artifact body."""
+    report_content = (
+        "# 🛰️ STRUCTURAL ALIGNMENT MAP\n\n"
+        "| Path | Align | Source |\n"
+        "| :--- | :--- | :--- |\n"
+    )
+
+    for path, data in sorted(snapshot.items()):
+        report_content += (
+            f"| {path} | {data['alignment']} | {data['source']} |\n"
+        )
+
+    return report_content
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="CTX-GROK v0.2.7.3")
+    parser.add_argument("--vault", type=Path, default=DEFAULT_VAULT_ROOT)
+    parser.add_argument("--taxonomy", type=Path, default=DEFAULT_TAXONOMY)
     args = parser.parse_args()
 
-    with open(DEFAULT_TAXONOMY, "r", encoding="utf-8") as f:
-        tax = yaml.safe_load(f)
+    taxonomy = load_taxonomy(args.taxonomy)
 
-    engine = DiagnosticEngine(args.vault, tax)
+    engine = DiagnosticEngine(args.vault, taxonomy)
     engine.run_pipeline()
 
-    if VSEncOrchestrator:
-        orch = VSEncOrchestrator(agent_registry={"ctx_grok": StubAgent()})
+    if not VSEncOrchestrator:
+        print("VSEncOrchestrator unavailable. Diagnostic scan completed; no Vault emission.")
+        return
 
-        # EMISSION: Structural Alignment Map
-        report_content = "# 🛰️ STRUCTURAL ALIGNMENT MAP\n\n| Path | Align | Source |\n| :--- | :--- | :--- |\n"
-        for path, data in engine.snapshot.items():
-            report_content += f"| {path} | {data['alignment']} | {data['source']} |\n"
+    agent = CTXGrokProtoAdapter() if CTXGrokProto else StubAgent()
+    orch = VSEncOrchestrator(agent_registry={"ctx_grok": agent})
 
-        payload = orch.run(
-            agent_name="ctx_grok",
-            input_text=report_content,
-            invocation_type="diagnostic",
-            custom_params={
-                "title": "Structural Alignment Map",
-                "relative_dir": ARTIFACT_DIR,
-                "priority": "medium",
-                "grok_ctx_reflection": "Hardened ingress diagnostic.",
-            },
-        )
-        orch.emit_to_vault(payload)
+    report_content = build_alignment_report(engine.snapshot)
+
+    payload = orch.run(
+        agent_name="ctx_grok",
+        input_text=report_content,
+        invocation_type="diagnostic",
+        custom_params={
+            "title": "Structural Alignment Map",
+            "relative_dir": ARTIFACT_DIR,
+            "priority": "medium",
+            "ctx_grok_reflection": "Hardened ingress diagnostic.",
+        },
+    )
+
+    orch.emit_to_vault(payload)
 
 
 if __name__ == "__main__":
     main()
-
