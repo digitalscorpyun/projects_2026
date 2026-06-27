@@ -1,0 +1,1305 @@
+path,linked_notes_count,proposed_footer,action,skipped_reason,resolution_detail
+africana_studies/01_social_structures/cyrus_carmack_belton_verdict_community_extraction.md,5,"## 🜃 Connected Glyphs
+
+- [[racial_adjudication]]
+- [[jim_crow_political_economy]]
+- [[gibbs_green_tragedy_counter_memory]]
+- [[sarah_lewis_douglass_visuality_and_racial_adjudication]]
+- [[democratic_legitimacy_and_structural_power]]
+",append,,'racial_adjudication' -> [[racial_adjudication]] (unresolved_fallback_filename) | 'jim_crow_political_economy' -> [[jim_crow_political_economy]] (unresolved_fallback_filename) | 'gibbs_green_tragedy_counter_memory' -> [[gibbs_green_tragedy_counter_memory]] (unresolved_fallback_filename) | 'sarah_lewis_douglass_visuality_and_racial_adjudication' -> [[sarah_lewis_douglass_visuality_and_racial_adjudication]] (unresolved_fallback_filename) | 'democratic_legitimacy_and_structural_power' -> [[democratic_legitimacy_and_structural_power]] (unresolved_fallback_filename)
+africana_studies/03_ways_of_knowing/racial_adjudication.md,1,"## 🜃 Connected Glyphs
+
+- [[sarah_lewis_douglass_visuality_and_racial_adjudication]]
+",append,,'africana_studies/05_cultural_meaning_making/sarah_lewis_douglass_visuality_and_racial_adjudication.md' -> [[sarah_lewis_douglass_visuality_and_racial_adjudication]] (resolved_title)
+africana_studies/09_reading_notes/carrscrolls/carrscroll_309.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+africana_studies/99_legacy_topic_staging/03_resistance_traditions/_meta.md,1,"## 🜃 Connected Glyphs
+
+- [[africana_studies_hub]]
+",append,,'africana_studies_hub' -> [[africana_studies_hub]] (unresolved_fallback_filename)
+africana_studies/99_legacy_topic_staging/04_cultural_expressions/kwanzaa.md,2,"## 🜃 Connected Glyphs
+
+- [[index]]
+- [[overview]]
+",append,,'africana_studies/index.md' -> [[index]] (unresolved_fallback_filename) | 'douglass_os/overview.md' -> [[overview]] (unresolved_fallback_filename)
+africana_studies/99_legacy_topic_staging/06_key_figures/mary_louvestre.md,1,"## 🜃 Connected Glyphs
+
+- [[black_revolutionary_network]]
+",append,,'africana_studies/07_conceptual_structures/black_revolutionary_network' -> [[black_revolutionary_network]] (unresolved_fallback_filename)
+africana_studies/99_legacy_topic_staging/06_key_figures/shadrach_minkins.md,1,"## 🜃 Connected Glyphs
+
+- [[black_revolutionary_network]]
+",append,,'africana_studies/07_conceptual_structures/black_revolutionary_network' -> [[black_revolutionary_network]] (unresolved_fallback_filename)
+africana_studies/99_legacy_topic_staging/07_conceptual_structures/anthea_butler_800_church_crown_asc.md,1,"## 🜃 Connected Glyphs
+
+- [[charlemagne_to_christian_nationalism_carrscroll]]
+",append,,'africana_studies/religion_power/charlemagne_to_christian_nationalism_carrscroll.md' -> [[charlemagne_to_christian_nationalism_carrscroll]] (unresolved_fallback_filename)
+africana_studies/99_legacy_topic_staging/08_research_tools/emit_20260104154927d.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+africana_studies/readme.md,3,"## 🜃 Connected Glyphs
+
+- [[africana_studies_hub]]
+- [[africana_studies_overview]]
+- [[Sankofa Reading Journey]]
+",append,,'africana_studies/00_method_and_syllabus/africana_studies_hub.md' -> [[africana_studies_hub]] (resolved_title) | 'africana_studies/00_method_and_syllabus/africana_studies_overview.md' -> [[africana_studies_overview]] (resolved_title) | 'africana_studies/00_method_and_syllabus/sankofa_reading_journey.md' -> [[Sankofa Reading Journey]] (resolved_title)
+critical_infrastructure/critical_infrastructure_readme.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'sankofa_spine' -> [[sankofa_spine]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/chess_dashboard.md,6,"## 🜃 Connected Glyphs
+
+- [[chess_index]]
+- [[chess_error_taxonomy]]
+- [[chess_game_archive]]
+- [[chess_opening_repertoire]]
+- [[chess_training_schedule]]
+- [[chess_training_rituals]]
+",append,,'war_council/chess/chess_index' -> [[chess_index]] (unresolved_fallback_filename) | 'war_council/chess/chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'war_council/chess/games/chess_game_archive' -> [[chess_game_archive]] (unresolved_fallback_filename) | 'war_council/chess/openings/chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'war_council/chess/training/chess_training_schedule' -> [[chess_training_schedule]] (unresolved_fallback_filename) | 'war_council/chess/training/chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/chess_index.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_game_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_game_archive' -> [[chess_game_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/games/20251206_003_maia_1100_win_b00.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_tactical_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/games/20251206_004_maia_1100_win_c44.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_tactical_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/games/20251206_005_maia_1100_draw_c40.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_tactical_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/games/20251209_001_maia_1100_loss_b00.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_tactical_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/games/20251209_002_maia_1100_loss_b00.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_tactical_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/games/20251210_001_maia_1100_win_b50.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_tactical_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/games/20251212_001_maia_1100_loss_b30.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_tactical_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/games/20251225_001_maia_1100_win_a40.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_tactical_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/games/20260106_001_maia_1100_win_d00.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_error_taxonomy]]
+- [[chess_training_rituals]]
+- [[chess_opening_repertoire]]
+- [[chess_tactical_archive]]
+",append,,'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_rituals' -> [[chess_training_rituals]] (unresolved_fallback_filename) | 'chess_opening_repertoire' -> [[chess_opening_repertoire]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/openings/chess_opening_repertoire.md,3,"## 🜃 Connected Glyphs
+
+- [[chess_index]]
+- [[chess_error_taxonomy]]
+- [[chess_training_schedule]]
+",append,,'chess_index' -> [[chess_index]] (unresolved_fallback_filename) | 'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_training_schedule' -> [[chess_training_schedule]] (unresolved_fallback_filename)
+liberal_arts/personal_development/chess/training/chess_training_rituals.md,4,"## 🜃 Connected Glyphs
+
+- [[chess_index]]
+- [[chess_training_schedule]]
+- [[chess_error_taxonomy]]
+- [[chess_tactical_archive]]
+",append,,'chess_index' -> [[chess_index]] (unresolved_fallback_filename) | 'chess_training_schedule' -> [[chess_training_schedule]] (unresolved_fallback_filename) | 'chess_error_taxonomy' -> [[chess_error_taxonomy]] (unresolved_fallback_filename) | 'chess_tactical_archive' -> [[chess_tactical_archive]] (unresolved_fallback_filename)
+liberal_arts/personal_development/daily_journal/010326.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'sankofa_spine' -> [[sankofa_spine]] (unresolved_fallback_filename)
+liberal_arts/personal_development/daily_journal/122125.md,3,"## 🜃 Connected Glyphs
+
+- [[carrscroll_302]]
+- [[slavery_by_another_name]]
+- [[black_reconstruction_in_america]]
+",append,,'carrscroll_302' -> [[carrscroll_302]] (unresolved_fallback_filename) | 'slavery_by_another_name' -> [[slavery_by_another_name]] (unresolved_fallback_filename) | 'black_reconstruction_in_america' -> [[black_reconstruction_in_america]] (unresolved_fallback_filename)
+liberal_arts/personal_development/daily_journal/122225.md,1,"## 🜃 Connected Glyphs
+
+- [[carrscroll_302]]
+",append,,'carrscroll_302' -> [[carrscroll_302]] (unresolved_fallback_filename)
+liberal_arts/personal_development/daily_journal/123125.md,1,"## 🜃 Connected Glyphs
+
+- [[ctx_grok_diagnostic_refactor]]
+",append,,'war_council/ratifications/ctx_grok_diagnostic_refactor.md' -> [[ctx_grok_diagnostic_refactor]] (unresolved_fallback_filename)
+liberal_arts/personal_development/daily_journal/daily_journal_index.md,3,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+- [[cssclasses_doctrine]]
+- [[metadata_protocol]]
+",append,,'sankofa_spine' -> [[sankofa_spine]] (unresolved_fallback_filename) | 'cssclasses_doctrine' -> [[cssclasses_doctrine]] (unresolved_fallback_filename) | 'metadata_protocol' -> [[metadata_protocol]] (unresolved_fallback_filename)
+liberal_arts/personal_development/employment/05_wioa_workforce/wioa_case_status.md,2,"## 🜃 Connected Glyphs
+
+- [[job_search_log]]
+- [[employment_dashboard]]
+",append,,'job_search_log' -> [[job_search_log]] (unresolved_fallback_filename) | 'employment_dashboard' -> [[employment_dashboard]] (unresolved_fallback_filename)
+liberal_arts/reading_journal/deep_research/black_panther_party_archival_scroll.md,3,"## 🜃 Connected Glyphs
+
+- [[digitalscorpyun_rebellion_code]]
+- [[black_identity_web]]
+- [[structure_note_bias_detection_framework]]
+",append,,'digitalscorpyun_rebellion_code.md' -> [[digitalscorpyun_rebellion_code]] (unresolved_fallback_filename) | 'reading_journal/deep_research/black_identity_web.md' -> [[black_identity_web]] (unresolved_fallback_filename) | 'ai_ethics/structure_note_bias_detection_framework.md' -> [[structure_note_bias_detection_framework]] (unresolved_fallback_filename)
+science/ibm_ai_developer/01_introduction_to_software_engineering/course_notes/module_01_the_software_development_lifecycle/README.md,2,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+- [[software_development_lifecycle]]
+",append,,'sankofa_spine' -> [[sankofa_spine]] (unresolved_fallback_filename) | 'software_development_lifecycle' -> [[software_development_lifecycle]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_certification_training_progress_tracker.md,1,"## 🜃 Connected Glyphs
+
+- [[network_plus_7_day_catch_up_sprint]]
+",append,,'network_plus_7_day_catch_up_sprint' -> [[network_plus_7_day_catch_up_sprint]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/career_development/seven_skills_ai_agent_engineering_ibm.md,3,"## 🜃 Connected Glyphs
+
+- [[cloud_computing_trends_and_innovations]]
+- [[gen_ai_under_the_hood]]
+- [[security_and_compliance]]
+",append,,'cloud_computing_trends_and_innovations' -> [[cloud_computing_trends_and_innovations]] (unresolved_fallback_filename) | 'gen_ai_under_the_hood' -> [[gen_ai_under_the_hood]] (unresolved_fallback_filename) | 'security_and_compliance' -> [[security_and_compliance]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/01_introduction_to_networking/nos_audit_ubuntu_server.md,2,"## 🜃 Connected Glyphs
+
+- [[nos_audit_windows_server]]
+- [[network_plus_syllabus_audit]]
+",append,,'nos_audit_windows_server' -> [[nos_audit_windows_server]] (unresolved_fallback_filename) | 'network_plus_syllabus_audit' -> [[network_plus_syllabus_audit]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/anding_subnet_masks.md,3,"## 🜃 Connected Glyphs
+
+- [[subnet_calculation_shortcuts]]
+- [[classful_addressing]]
+- [[subnetting_ipv4]]
+",append,,'subnet_calculation_shortcuts' -> [[subnet_calculation_shortcuts]] (unresolved_fallback_filename) | 'classful_addressing' -> [[classful_addressing]] (unresolved_fallback_filename) | 'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/appendix_b_self_check.md,3,"## 🜃 Connected Glyphs
+
+- [[subnet_calculation_shortcuts]]
+- [[anding_subnet_masks]]
+- [[chapter_8_self_check_solutions]]
+",append,,'subnet_calculation_shortcuts' -> [[subnet_calculation_shortcuts]] (unresolved_fallback_filename) | 'anding_subnet_masks' -> [[anding_subnet_masks]] (unresolved_fallback_filename) | 'chapter_8_self_check_solutions' -> [[chapter_8_self_check_solutions]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/how_subnets_work.md,3,"## 🜃 Connected Glyphs
+
+- [[classful_addressing]]
+- [[subnetting_ipv4]]
+- [[benefits_of_segmentation]]
+",append,,'classful_addressing' -> [[classful_addressing]] (unresolved_fallback_filename) | 'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename) | 'benefits_of_segmentation' -> [[benefits_of_segmentation]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/implementing_subnets.md,4,"## 🜃 Connected Glyphs
+
+- [[classful_addressing]]
+- [[subnetting_ipv4]]
+- [[network_services_across_subnets]]
+- [[domain_mapping]]
+",append,,'classful_addressing' -> [[classful_addressing]] (unresolved_fallback_filename) | 'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename) | 'network_services_across_subnets' -> [[network_services_across_subnets]] (unresolved_fallback_filename) | 'domain_mapping' -> [[domain_mapping]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/index.md,11,"## 🜃 Connected Glyphs
+
+- [[domain_mapping]]
+- [[classful_addressing]]
+- [[how_subnets_work]]
+- [[subnetting_ipv4]]
+- [[implementing_subnets]]
+- [[network_services_across_subnets]]
+- [[vlsm_variable_length_subnet_mask]]
+- [[subnets_in_ipv6]]
+- [[subnet_calculation_shortcuts]]
+- [[anding_subnet_masks]]
+- [[appendix_b_self_check]]
+",append,,'domain_mapping' -> [[domain_mapping]] (unresolved_fallback_filename) | 'classful_addressing' -> [[classful_addressing]] (unresolved_fallback_filename) | 'how_subnets_work' -> [[how_subnets_work]] (unresolved_fallback_filename) | 'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename) | 'implementing_subnets' -> [[implementing_subnets]] (unresolved_fallback_filename) | 'network_services_across_subnets' -> [[network_services_across_subnets]] (unresolved_fallback_filename) | 'vlsm_variable_length_subnet_mask' -> [[vlsm_variable_length_subnet_mask]] (unresolved_fallback_filename) | 'subnets_in_ipv6' -> [[subnets_in_ipv6]] (unresolved_fallback_filename) | 'subnet_calculation_shortcuts' -> [[subnet_calculation_shortcuts]] (unresolved_fallback_filename) | 'anding_subnet_masks' -> [[anding_subnet_masks]] (unresolved_fallback_filename) | 'appendix_b_self_check' -> [[appendix_b_self_check]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/network_services_across_subnets.md,5,"## 🜃 Connected Glyphs
+
+- [[classful_addressing]]
+- [[subnetting_ipv4]]
+- [[implementing_subnets]]
+- [[vlsm_variable_length_subnet_mask]]
+- [[domain_mapping]]
+",append,,'classful_addressing' -> [[classful_addressing]] (unresolved_fallback_filename) | 'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename) | 'implementing_subnets' -> [[implementing_subnets]] (unresolved_fallback_filename) | 'vlsm_variable_length_subnet_mask' -> [[vlsm_variable_length_subnet_mask]] (unresolved_fallback_filename) | 'domain_mapping' -> [[domain_mapping]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/subnet_calculation_shortcuts.md,3,"## 🜃 Connected Glyphs
+
+- [[subnetting_ipv4]]
+- [[vlsm_variable_length_subnet_mask]]
+- [[anding_subnet_masks]]
+",append,,'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename) | 'vlsm_variable_length_subnet_mask' -> [[vlsm_variable_length_subnet_mask]] (unresolved_fallback_filename) | 'anding_subnet_masks' -> [[anding_subnet_masks]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/subnets_in_ipv6.md,2,"## 🜃 Connected Glyphs
+
+- [[vlsm_variable_length_subnet_mask]]
+- [[how_subnets_work]]
+",append,,'vlsm_variable_length_subnet_mask' -> [[vlsm_variable_length_subnet_mask]] (unresolved_fallback_filename) | 'how_subnets_work' -> [[how_subnets_work]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/subnetting_ipv4.md,3,"## 🜃 Connected Glyphs
+
+- [[classful_addressing]]
+- [[implementing_subnets]]
+- [[domain_mapping]]
+",append,,'classful_addressing' -> [[classful_addressing]] (unresolved_fallback_filename) | 'implementing_subnets' -> [[implementing_subnets]] (unresolved_fallback_filename) | 'domain_mapping' -> [[domain_mapping]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/03_addressing/vlsm_variable_length_subnet_mask.md,5,"## 🜃 Connected Glyphs
+
+- [[classful_addressing]]
+- [[subnetting_ipv4]]
+- [[implementing_subnets]]
+- [[network_services_across_subnets]]
+- [[domain_mapping]]
+",append,,'classful_addressing' -> [[classful_addressing]] (unresolved_fallback_filename) | 'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename) | 'implementing_subnets' -> [[implementing_subnets]] (unresolved_fallback_filename) | 'network_services_across_subnets' -> [[network_services_across_subnets]] (unresolved_fallback_filename) | 'domain_mapping' -> [[domain_mapping]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_1_network_concepts/07_network_architecture/03_cloud_architecture/cloud_architecture_fundamentals.md,3,"## 🜃 Connected Glyphs
+
+- [[physical_architecture]]
+- [[virtual_networking]]
+- [[azure_architecture_map]]
+",append,,'physical_architecture' -> [[physical_architecture]] (unresolved_fallback_filename) | 'virtual_networking' -> [[virtual_networking]] (unresolved_fallback_filename) | 'azure_architecture_map' -> [[azure_architecture_map]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/05_cabling/cabling_types_and_connectors.md,4,"## 🜃 Connected Glyphs
+
+- [[transmission_basics]]
+- [[multiplexing]]
+- [[osi_model_overview]]
+- [[signal_degradation]]
+",append,,'transmission_basics' -> [[transmission_basics]] (unresolved_fallback_filename) | 'multiplexing' -> [[multiplexing]] (unresolved_fallback_filename) | 'osi_model_overview' -> [[osi_model_overview]] (unresolved_fallback_filename) | 'signal_degradation' -> [[signal_degradation]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/05_cabling/fiber_ethernet_standards.md,4,"## 🜃 Connected Glyphs
+
+- [[fiber_optic_cable_fundamentals]]
+- [[transceivers_and_connectors]]
+- [[signal_degradation]]
+- [[cabling_types_and_connectors]]
+",append,,'fiber_optic_cable_fundamentals' -> [[fiber_optic_cable_fundamentals]] (unresolved_fallback_filename) | 'transceivers_and_connectors' -> [[transceivers_and_connectors]] (unresolved_fallback_filename) | 'signal_degradation' -> [[signal_degradation]] (unresolved_fallback_filename) | 'cabling_types_and_connectors' -> [[cabling_types_and_connectors]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/05_cabling/osi_model_overview.md,4,"## 🜃 Connected Glyphs
+
+- [[transmission_basics]]
+- [[multiplexing]]
+- [[cabling_types_and_connectors]]
+- [[signal_degradation]]
+",append,,'transmission_basics' -> [[transmission_basics]] (unresolved_fallback_filename) | 'multiplexing' -> [[multiplexing]] (unresolved_fallback_filename) | 'cabling_types_and_connectors' -> [[cabling_types_and_connectors]] (unresolved_fallback_filename) | 'signal_degradation' -> [[signal_degradation]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/05_cabling/signal_degradation.md,4,"## 🜃 Connected Glyphs
+
+- [[transmission_basics]]
+- [[multiplexing]]
+- [[cabling_types_and_connectors]]
+- [[osi_model_overview]]
+",append,,'transmission_basics' -> [[transmission_basics]] (unresolved_fallback_filename) | 'multiplexing' -> [[multiplexing]] (unresolved_fallback_filename) | 'cabling_types_and_connectors' -> [[cabling_types_and_connectors]] (unresolved_fallback_filename) | 'osi_model_overview' -> [[osi_model_overview]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/07_network_architecture/02_virtual_architecture/sdn_architecture.md,5,"## 🜃 Connected Glyphs
+
+- [[virtual_networking]]
+- [[network_availability_and_redundancy]]
+- [[spanning_tree_protocol]]
+- [[mac_address_table]]
+- [[switch_path_management]]
+",append,,'virtual_networking' -> [[virtual_networking]] (unresolved_fallback_filename) | 'network_availability_and_redundancy' -> [[network_availability_and_redundancy]] (unresolved_fallback_filename) | 'spanning_tree_protocol' -> [[spanning_tree_protocol]] (unresolved_fallback_filename) | 'mac_address_table' -> [[mac_address_table]] (unresolved_fallback_filename) | 'switch_path_management' -> [[switch_path_management]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/benefits_of_segmentation.md,3,"## 🜃 Connected Glyphs
+
+- [[domain_mapping]]
+- [[how_subnets_work]]
+- [[types_of_vlans]]
+",append,,'domain_mapping' -> [[domain_mapping]] (unresolved_fallback_filename) | 'how_subnets_work' -> [[how_subnets_work]] (unresolved_fallback_filename) | 'types_of_vlans' -> [[types_of_vlans]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/chapter_8_acronyms_checklist.md,3,"## 🜃 Connected Glyphs
+
+- [[chapter_8_key_terms]]
+- [[storage_area_network_san]]
+- [[switch_port_configuration]]
+",append,,'chapter_8_key_terms' -> [[chapter_8_key_terms]] (unresolved_fallback_filename) | 'storage_area_network_san' -> [[storage_area_network_san]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/chapter_8_hands_on_and_capstone_projects.md,4,"## 🜃 Connected Glyphs
+
+- [[how_subnets_work]]
+- [[subnetting_ipv4]]
+- [[switch_port_configuration]]
+- [[vlsm_variable_length_subnet_mask]]
+",append,,'how_subnets_work' -> [[how_subnets_work]] (unresolved_fallback_filename) | 'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename) | 'vlsm_variable_length_subnet_mask' -> [[vlsm_variable_length_subnet_mask]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/chapter_8_key_terms.md,5,"## 🜃 Connected Glyphs
+
+- [[chapter_8_acronyms_checklist]]
+- [[switch_port_configuration]]
+- [[vlan_maintenance]]
+- [[storage_area_network_san]]
+- [[network_spaces_in_the_cloud]]
+",append,,'chapter_8_acronyms_checklist' -> [[chapter_8_acronyms_checklist]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename) | 'vlan_maintenance' -> [[vlan_maintenance]] (unresolved_fallback_filename) | 'storage_area_network_san' -> [[storage_area_network_san]] (unresolved_fallback_filename) | 'network_spaces_in_the_cloud' -> [[network_spaces_in_the_cloud]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/chapter_8_review_questions.md,4,"## 🜃 Connected Glyphs
+
+- [[chapter_8_scenario_based_questions]]
+- [[chapter_8_self_check_solutions]]
+- [[subnetting_ipv4]]
+- [[switch_port_configuration]]
+",append,,'chapter_8_scenario_based_questions' -> [[chapter_8_scenario_based_questions]] (unresolved_fallback_filename) | 'chapter_8_self_check_solutions' -> [[chapter_8_self_check_solutions]] (unresolved_fallback_filename) | 'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/chapter_8_scenario_based_questions.md,4,"## 🜃 Connected Glyphs
+
+- [[chapter_8_review_questions]]
+- [[switch_port_configuration]]
+- [[vlan_maintenance]]
+- [[network_spaces_in_the_cloud]]
+",append,,'chapter_8_review_questions' -> [[chapter_8_review_questions]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename) | 'vlan_maintenance' -> [[vlan_maintenance]] (unresolved_fallback_filename) | 'network_spaces_in_the_cloud' -> [[network_spaces_in_the_cloud]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/chapter_8_self_check_solutions.md,8,"## 🜃 Connected Glyphs
+
+- [[chapter_8_review_questions]]
+- [[chapter_8_scenario_based_questions]]
+- [[classful_addressing]]
+- [[subnetting_ipv4]]
+- [[switch_port_configuration]]
+- [[types_of_vlans]]
+- [[network_spaces_in_the_cloud]]
+- [[cloud_at_the_edge]]
+",append,,'chapter_8_review_questions' -> [[chapter_8_review_questions]] (unresolved_fallback_filename) | 'chapter_8_scenario_based_questions' -> [[chapter_8_scenario_based_questions]] (unresolved_fallback_filename) | 'classful_addressing' -> [[classful_addressing]] (unresolved_fallback_filename) | 'subnetting_ipv4' -> [[subnetting_ipv4]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename) | 'types_of_vlans' -> [[types_of_vlans]] (unresolved_fallback_filename) | 'network_spaces_in_the_cloud' -> [[network_spaces_in_the_cloud]] (unresolved_fallback_filename) | 'cloud_at_the_edge' -> [[cloud_at_the_edge]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/cloud_at_the_edge.md,2,"## 🜃 Connected Glyphs
+
+- [[network_spaces_in_the_cloud]]
+- [[vxlan]]
+",append,,'network_spaces_in_the_cloud' -> [[network_spaces_in_the_cloud]] (unresolved_fallback_filename) | 'vxlan' -> [[vxlan]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/index.md,19,"## 🜃 Connected Glyphs
+
+- [[domain_mapping]]
+- [[benefits_of_segmentation]]
+- [[operational_technology_ot]]
+- [[storage_area_network_san]]
+- [[why_use_vlans]]
+- [[switch_port_configuration]]
+- [[vlans_and_subnets]]
+- [[switch_virtual_interfaces]]
+- [[types_of_vlans]]
+- [[vlan_maintenance]]
+- [[vxlan]]
+- [[network_spaces_in_the_cloud]]
+- [[cloud_at_the_edge]]
+- [[chapter_8_key_terms]]
+- [[chapter_8_acronyms_checklist]]
+- [[chapter_8_review_questions]]
+- [[chapter_8_scenario_based_questions]]
+- [[chapter_8_self_check_solutions]]
+- [[chapter_8_hands_on_and_capstone_projects]]
+",append,,'domain_mapping' -> [[domain_mapping]] (unresolved_fallback_filename) | 'benefits_of_segmentation' -> [[benefits_of_segmentation]] (unresolved_fallback_filename) | 'operational_technology_ot' -> [[operational_technology_ot]] (unresolved_fallback_filename) | 'storage_area_network_san' -> [[storage_area_network_san]] (unresolved_fallback_filename) | 'why_use_vlans' -> [[why_use_vlans]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename) | 'vlans_and_subnets' -> [[vlans_and_subnets]] (unresolved_fallback_filename) | 'switch_virtual_interfaces' -> [[switch_virtual_interfaces]] (unresolved_fallback_filename) | 'types_of_vlans' -> [[types_of_vlans]] (unresolved_fallback_filename) | 'vlan_maintenance' -> [[vlan_maintenance]] (unresolved_fallback_filename) | 'vxlan' -> [[vxlan]] (unresolved_fallback_filename) | 'network_spaces_in_the_cloud' -> [[network_spaces_in_the_cloud]] (unresolved_fallback_filename) | 'cloud_at_the_edge' -> [[cloud_at_the_edge]] (unresolved_fallback_filename) | 'chapter_8_key_terms' -> [[chapter_8_key_terms]] (unresolved_fallback_filename) | 'chapter_8_acronyms_checklist' -> [[chapter_8_acronyms_checklist]] (unresolved_fallback_filename) | 'chapter_8_review_questions' -> [[chapter_8_review_questions]] (unresolved_fallback_filename) | 'chapter_8_scenario_based_questions' -> [[chapter_8_scenario_based_questions]] (unresolved_fallback_filename) | 'chapter_8_self_check_solutions' -> [[chapter_8_self_check_solutions]] (unresolved_fallback_filename) | 'chapter_8_hands_on_and_capstone_projects' -> [[chapter_8_hands_on_and_capstone_projects]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/network_spaces_in_the_cloud.md,4,"## 🜃 Connected Glyphs
+
+- [[vxlan]]
+- [[benefits_of_segmentation]]
+- [[operational_technology_ot]]
+- [[cloud_at_the_edge]]
+",append,,'vxlan' -> [[vxlan]] (unresolved_fallback_filename) | 'benefits_of_segmentation' -> [[benefits_of_segmentation]] (unresolved_fallback_filename) | 'operational_technology_ot' -> [[operational_technology_ot]] (unresolved_fallback_filename) | 'cloud_at_the_edge' -> [[cloud_at_the_edge]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/operational_technology_ot.md,2,"## 🜃 Connected Glyphs
+
+- [[benefits_of_segmentation]]
+- [[storage_area_network_san]]
+",append,,'benefits_of_segmentation' -> [[benefits_of_segmentation]] (unresolved_fallback_filename) | 'storage_area_network_san' -> [[storage_area_network_san]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/storage_area_network_san.md,2,"## 🜃 Connected Glyphs
+
+- [[operational_technology_ot]]
+- [[benefits_of_segmentation]]
+",append,,'operational_technology_ot' -> [[operational_technology_ot]] (unresolved_fallback_filename) | 'benefits_of_segmentation' -> [[benefits_of_segmentation]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/switch_port_configuration.md,3,"## 🜃 Connected Glyphs
+
+- [[types_of_vlans]]
+- [[vlans_and_subnets]]
+- [[how_subnets_work]]
+",append,,'types_of_vlans' -> [[types_of_vlans]] (unresolved_fallback_filename) | 'vlans_and_subnets' -> [[vlans_and_subnets]] (unresolved_fallback_filename) | 'how_subnets_work' -> [[how_subnets_work]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/switch_virtual_interfaces.md,2,"## 🜃 Connected Glyphs
+
+- [[vlans_and_subnets]]
+- [[switch_port_configuration]]
+",append,,'vlans_and_subnets' -> [[vlans_and_subnets]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/types_of_vlans.md,2,"## 🜃 Connected Glyphs
+
+- [[switch_port_configuration]]
+- [[vlan_maintenance]]
+",append,,'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename) | 'vlan_maintenance' -> [[vlan_maintenance]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/vlan_maintenance.md,2,"## 🜃 Connected Glyphs
+
+- [[types_of_vlans]]
+- [[switch_port_configuration]]
+",append,,'types_of_vlans' -> [[types_of_vlans]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/vlans_and_subnets.md,3,"## 🜃 Connected Glyphs
+
+- [[switch_port_configuration]]
+- [[network_services_across_subnets]]
+- [[switch_virtual_interfaces]]
+",append,,'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename) | 'network_services_across_subnets' -> [[network_services_across_subnets]] (unresolved_fallback_filename) | 'switch_virtual_interfaces' -> [[switch_virtual_interfaces]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/vxlan.md,2,"## 🜃 Connected Glyphs
+
+- [[vlan_maintenance]]
+- [[network_spaces_in_the_cloud]]
+",append,,'vlan_maintenance' -> [[vlan_maintenance]] (unresolved_fallback_filename) | 'network_spaces_in_the_cloud' -> [[network_spaces_in_the_cloud]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_2_implementations/08_segmentation/why_use_vlans.md,3,"## 🜃 Connected Glyphs
+
+- [[benefits_of_segmentation]]
+- [[how_subnets_work]]
+- [[switch_port_configuration]]
+",append,,'benefits_of_segmentation' -> [[benefits_of_segmentation]] (unresolved_fallback_filename) | 'how_subnets_work' -> [[how_subnets_work]] (unresolved_fallback_filename) | 'switch_port_configuration' -> [[switch_port_configuration]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/domain_4_security/10_risk_management/index.md,1,"## 🜃 Connected Glyphs
+
+- [[domain_mapping]]
+",append,,'domain_mapping' -> [[domain_mapping]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/comptia_network_plus_v10/readme.md,2,"## 🜃 Connected Glyphs
+
+- [[comptia_network_plus_v10]]
+- [[network_plus_7_day_catch_up_sprint]]
+",append,,'comptia_network_plus_v10' -> [[comptia_network_plus_v10]] (unresolved_fallback_filename) | 'network_plus_7_day_catch_up_sprint' -> [[network_plus_7_day_catch_up_sprint]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/05_the_microsoft_365_ecosystem/course_notes/module_01_introduction_to_m365_components_and_services/desktop_vs_cloud.md,1,"## 🜃 Connected Glyphs
+
+- [[README]]
+",append,,'science/it_foundations/curriculum/microsoft_cloud_support_associate/05_the_microsoft_365_ecosystem/README.md' -> [[README]] (resolved_no_title_fallback_filename)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/05_the_microsoft_365_ecosystem/course_notes/module_02_integration_and_business_productivity/benefits_of_digital_platforms_for_businesses_and_individuals.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/05_the_microsoft_365_ecosystem/course_notes/module_02_integration_and_business_productivity/calendar_troubleshooting_tips_tricks.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/05_the_microsoft_365_ecosystem/course_notes/module_02_integration_and_business_productivity/introduction_calendar_and_events.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/07_cloud_computing_essentials_with_azure_management/course_notes/azure_management_and_governance/telemetry_governance_through_systems_thinking.md,3,"## 🜃 Connected Glyphs
+
+- [[advanced_monitoring_components_with_azure_monitor]]
+- [[azure_monitor_architecture_walkthrough]]
+- [[troubleshooting_with_confidence_exploring_azure_monitor_data_sources]]
+",append,,'advanced_monitoring_components_with_azure_monitor' -> [[advanced_monitoring_components_with_azure_monitor]] (unresolved_fallback_filename) | 'azure_monitor_architecture_walkthrough' -> [[azure_monitor_architecture_walkthrough]] (unresolved_fallback_filename) | 'troubleshooting_with_confidence_exploring_azure_monitor_data_sources' -> [[troubleshooting_with_confidence_exploring_azure_monitor_data_sources]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/07_cloud_computing_essentials_with_azure_management/course_notes/exploring_IaaS_PaaS_SaaS.md,2,"## 🜃 Connected Glyphs
+
+- [[intro_cloud_computing_basics_concepts]]
+- [[security_and_compliance]]
+",append,,'intro_cloud_computing_basics_concepts' -> [[intro_cloud_computing_basics_concepts]] (unresolved_fallback_filename) | 'security_and_compliance' -> [[security_and_compliance]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/07_cloud_computing_essentials_with_azure_management/course_notes/pitfalls_shortcomings_gen_ai.md,2,"## 🜃 Connected Glyphs
+
+- [[gen_ai_under_the_hood]]
+- [[summary_styles_guide]]
+",append,,'gen_ai_under_the_hood' -> [[gen_ai_under_the_hood]] (unresolved_fallback_filename) | 'summary_styles_guide' -> [[summary_styles_guide]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/08_azure_cloud_services/course_notes/azure_networking/azure_load_balancer_in_depth.md,5,"## 🜃 Connected Glyphs
+
+- [[introduction_azure_load_balancer]]
+- [[introduction_to_load_balancing_algorithms]]
+- [[configuring_load_balancing_rules_in_azure]]
+- [[azure_virtual_networks_explained]]
+- [[azure_networking_foundations]]
+",append,,'introduction_azure_load_balancer' -> [[introduction_azure_load_balancer]] (unresolved_fallback_filename) | 'introduction_to_load_balancing_algorithms' -> [[introduction_to_load_balancing_algorithms]] (unresolved_fallback_filename) | 'configuring_load_balancing_rules_in_azure' -> [[configuring_load_balancing_rules_in_azure]] (unresolved_fallback_filename) | 'azure_virtual_networks_explained' -> [[azure_virtual_networks_explained]] (unresolved_fallback_filename) | 'azure_networking_foundations' -> [[azure_networking_foundations]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/08_azure_cloud_services/course_notes/azure_networking/optimizing_application_delivery_with_azure_load_balancer.md,3,"## 🜃 Connected Glyphs
+
+- [[azure_load_balancer_configurations]]
+- [[introduction_to_load_balancing_algorithms]]
+- [[configuring_load_balancing_rules_in_azure]]
+",append,,'science/it_foundations/curriculum/microsoft_cloud_support_associate/08_azure_cloud_services/course_notes/azure_networking/azure_load_balancer_configurations.md' -> [[azure_load_balancer_configurations]] (resolved_title) | 'science/it_foundations/curriculum/microsoft_cloud_support_associate/08_azure_cloud_services/course_notes/azure_networking/introduction_to_load_balancing_algorithms.md' -> [[introduction_to_load_balancing_algorithms]] (resolved_title) | 'science/it_foundations/curriculum/microsoft_cloud_support_associate/08_azure_cloud_services/course_notes/azure_networking/configuring_load_balancing_rules_in_azure.md' -> [[configuring_load_balancing_rules_in_azure]] (resolved_title)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/08_azure_cloud_services/course_notes/azure_platform_services/exploring_core_azure_services.md,2,"## 🜃 Connected Glyphs
+
+- [[deploying_azure_kubernetes_service_aks]]
+- [[azure_traffic_manager_overview]]
+",append,,'deploying_azure_kubernetes_service_aks' -> [[deploying_azure_kubernetes_service_aks]] (unresolved_fallback_filename) | 'azure_traffic_manager_overview' -> [[azure_traffic_manager_overview]] (unresolved_fallback_filename)
+science/it_foundations/curriculum/microsoft_cloud_support_associate/microsoft_cloud_support_associate_curriculum_overview.md,2,"## 🜃 Connected Glyphs
+
+- [[azure_iam_essentials]]
+- [[implementing_role_based_access_control_in_azure]]
+",append,,'azure_iam_essentials' -> [[azure_iam_essentials]] (unresolved_fallback_filename) | 'implementing_role_based_access_control_in_azure' -> [[implementing_role_based_access_control_in_azure]] (unresolved_fallback_filename)
+science/python/00_core/python_learning_roadmap.md,4,"## 🜃 Connected Glyphs
+
+- [[python_overview]]
+- [[foundations_programming_terms]]
+- [[python_chapter4_exercises]]
+- [[ai_ml_basics]]
+",append,,'python_overview' -> [[python_overview]] (unresolved_fallback_filename) | 'foundations_programming_terms' -> [[foundations_programming_terms]] (unresolved_fallback_filename) | 'python_chapter4_exercises' -> [[python_chapter4_exercises]] (unresolved_fallback_filename) | 'ai_ml_basics' -> [[ai_ml_basics]] (unresolved_fallback_filename)
+war_council/_artifacts/ctx_grok/anacostia_vault_paths.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/ctx_grok/emit_20260131082529.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/ctx_grok/emit_20260624233716.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/ctx_grok/emit_20260625010548.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/ctx_grok/semantic_core_map.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/ctx_grok/semantic_drift_report.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/ctx_grok/structural_alignment_map.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/kimi_deux/emit_20260109130206.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/archive/emit_20260108180555k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/archive/emit_20260109145908k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/archive/emit_20260110090848d.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/archive/emit_20260210081923.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/emit_20260328134337.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/emit_20260329174228.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/emit_20260329222303.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/emit_20260331173303.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/emit_20260401144532.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/emit_20260401170857.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/qwen_echo/summaries/netanyahus_amalek.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/1876_us_presidential_election.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/1876_us_presidential_election_a.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/american_revolutionary_war.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/american_revolutionary_war_1.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/1945_firebombing_of_tokyo.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/Albion Winegar Tourgée — Legal Activism Amidst Structural Constraints.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/Alexander Butterfield.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/coretta_scott_king.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+"war_council/_artifacts/scholarly_dive/archive/Deus Vult — Ideology, Power, and Performance in the First Crusade.md",1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/elizabeth_van_lew.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260211101030k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260213093137k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260215061234k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260217093623k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260221103851k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260221113210.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260221113308.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260222064809.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260223081145k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260226152702.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260303110349.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260303114956.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260303121145.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260324070453.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/emit_20260324183604.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/jesse_jackson_interrogating_iconography.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/jesse_jackson_intersections_of_activism_and_politics.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/Opus Dei — A Critical Synthesis.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/research_1861_st_louis_germans_20260108_1642k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/research_aes_256_20260109_1538k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/research_black_panther_party_20260106_1840k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/research_henri_bergson_20260104_1924k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/research_imperialism_20260105_1420k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/research_reconstruction_in_america_20260107_1048k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/research_zora_neale_hurston_20260107_1450k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/scholarly_synthesis_on_stagecoach_1939.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/seven_years_wark.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/archive/the_celestial_empire_reconsidered.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/asymmetric_warfare_and_the_limits_of_coventional_military_superiority.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Battle of Aljubarrota.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/battle_of_shiloh.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/bayard_rustin.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+"war_council/_artifacts/scholarly_dive/Bloody Sunday (Selma, 1965).md",1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/cecil_john_rhodes.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/crowfoot.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Dieppe Raid.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/doolittle_raid.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Ella Josephine Baker — Architect of Grassroots Resistance.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/ida_b_wells.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/isham_quick.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/José Prudencio Padilla — Between Revolution and Empire.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/karl_marx.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+"war_council/_artifacts/scholarly_dive/Kastner Negotiations (Hungary, 1944).md",1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Kharg Island — Strata of Power and Resistance.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/king_abdullah_I_of_transjordan.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/king_crane_commission_1919.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Margaret Chase Smith — Defiance Within Constraints.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Masjid Al-Aqsa.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/matthew_alexander_henson.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/melania_knauss_trump.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Mojtaba Khamenei.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/muhammad_iqbal.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/myra_bradwell.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/National Housing Act of 1934.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/nina_mae_mckinney.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Operation Praying Mantis.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/ralph_david_abernathy.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Republican Party 1854.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Revisiting Crispus Attucks — Between Myth and Evidence.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+"war_council/_artifacts/scholarly_dive/Revisiting the Boston Massacre — Power, Propaganda, and Popular Resistance.md",1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/shimon_peres_negev_nuclear_research_center.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Solntsevskaya Bratva.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Synthesis of the 1992 Los Angeles Riots.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/teapot_dome_scandal.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/The Haavara Agreement.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/the_avignon_papacy.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+"war_council/_artifacts/scholarly_dive/Tristan Walker — Technologist, Entrepreneur, Policy Advocate.md",1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/viktor_orban.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/william_g_brownlow.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/yusuf_diay_al_din_pasha_al_khalidi.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scholarly_dive/Ze'ev Jabotinsky's Iron Wall Doctrine (1923) — A Critical Synthesis.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/annotation_white_america_nine_forgotten_men_and_poor_folk_20260325_1739.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/annotation_white_trash_nine_forgotten_men_and_poor_folk_20260325_1941.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation___20260317_0930.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation__xiv_counter_revolution_of_property_20260316_2125.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_x_the_black_proletariat_in_south_carolina_20260207_1411.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_x_the_black_proletariat_in_south_carolina_20260207_1443.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_x_the_black_proletariat_in_south_carolina_k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xi_the_black_proletariat_in_mississippi_and_louisiana_20260209_2200k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xi_the_black_proletariat_in_mississippi_and_louisiana_20260214_2154k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xi_the_black_proletariat_in_mississippi_and_louisiana_20260214_2208.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xi_the_black_proletariat_in_mississippi_and_louisiana_20260214_2244.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xi_the_black_proletariat_in_mississippi_and_louisiana_k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xi_the_black_proletariat_in_mississippi_and_louisiana_keep.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xi_the_black_proletariat_in_mississippi_and_louisianak.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xi_the_black_proletariate_in_mississippi_and_louisiana_20260213_2104.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xii_the_dual_for_labor_control_on_the_border_and_frontier_20260304_1207.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xii_the_white_proletariat_in_alabama_georgia_and_florida_20260222_1505.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xiii_the_dual_for_labor_control_on_border_and_frontier_20260310_1039.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xiii_the_duel_for_labor_control_on_border_and_frontier_20260309_1626.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xiii_the_duel_for_labor_control_on_border_and_frontier_20260310_1057.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xiii_the_duel_for_labor_control_on_border_and_frontier_20260315_1329.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xiii_the_duel_for_labor_control_on_the_border_and_frontier_20260304_1219.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xiv_counter_revolution_of_property_20260317_0600.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xv_funding_the_public_school_20260317_1940.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xv_funding_the_public_school_20260317_2120.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_in_america_xvi_back_toward_slavery_20260318_2106.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_iv_the_general_strike_20260108_0535k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_iv_the_general_strike_20260108_0554k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_iv_the_general_strike_20260108_0703k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_iv_the_general_strike_20260108_0822k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_iv_the_general_strike_20260108_1924k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_iv_the_general_strike_20260109_1058.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xii_the_white_proletariat_in_alabama_georgia_and_florida_20260223_1620.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260313_1753.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260313_1816.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260315_1312.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260315_1322.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260315_2032.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260316_0907.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260316_0930.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260316_0935.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260316_1237.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260316_1313.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_border_and_frontier_20260316_1332.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiii_the_duel_for_labor_control_on_the_border_and_frontier_20260316_0902.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiv_counter_revelation_of_property_20260316_2031.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiv_counter_revolution_of_property_20260316_1912.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiv_counter_revolution_of_property_20260316_2001.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiv_counter_revolution_of_property_20260316_2009.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_black_reconstruction_xiv_counter_revolution_of_property_20260317_1735.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_cloud_computing_introduction_20260109_0658k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_cloud_computing_revised_and_updated_edition_introduction_20260109_1159k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_cloud_computing_revised_and_updated_edition_introduction_20260109_1217k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_cloud_computing_revised_and_updated_edition_introduction_20260109_1504k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_cloud_computing_revised_and_updated_introduction_20260109_1451k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_the_bluest_eye_autumn_20260104_1227k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_the_bluest_eye_autumn_20260104_1324k.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_w_e_b_du_bois_xiv_counter_revolution_of_property_20260316_1930.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_5_andrew_jackson_s_cracker_country_the_squatter_as_common_man_20260322_1757.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_5_andrew_jackson_s_cracker_country_the_squatter_as_common_man_20260322_1805.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_5_andrew_jackson_s_cracker_country_the_squatter_as_common_man_20260322_1810.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_chapter_three_benjamin_franklin_s_american_breed_20260211_0707.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_i_taking_out_the_trash_waste_people_in_the_new_world_20260319_1423.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_i_taking_out_the_trash_waste_people_in_the_new_world_20260319_1458.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_nine_forgotten_men_and_poor_folk_20260325_1657.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_nine_forgotten_men_and_poor_folk_downward_mobility_and_the_great_depression_20260325_1618.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_nine_forgotten_men_and_poor_folk_downward_mobility_and_the_great_depression_20260325_1626.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_nine_forgotten_men_and_poor_folks_20260325_1731.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_nine_forotten_men_and_poor_folk_downward_mobility_and_the_great_depression_20260325_0913.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_taking_out_the_trash_waste_people_in_the_new_world_20260319_1418.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_the_400_year_untold_history_of_class_in_america_nine_forgotten_men_and_poor_folk_downward_mobility_and_the_great_depression_20260325_1418.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/_artifacts/scorpyun_annotator/archive/annotation_white_trash_the_400_year_untold_history_of_class_in_america_nine_forgotten_men_and_poor_folk_downward_mobility_and_the_great_depression_20260325_1542.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/avm_syndicate/_script_output_archive/kimi_deux/drill_order_of_operations_20260103.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'war_council/sankofa_spine.md' -> [[sankofa_spine]] (resolved_title)
+war_council/avm_syndicate/_script_output_archive/kimi_deux/drills/drill_write_scripts_using_ifeli_20260101.md,1,"## 🜃 Connected Glyphs
+
+- [[python_learning_path]]
+",append,,'python_learning_path' -> [[python_learning_path]] (unresolved_fallback_filename)
+war_council/avm_syndicate/_script_output_archive/kimi_deux/kimi_deux_training_log.md,1,"## 🜃 Connected Glyphs
+
+- [[agent_registry]]
+",append,,'agent_registry' -> [[agent_registry]] (unresolved_fallback_filename)
+war_council/avm_syndicate/agents/avm_syndicate_gameplan.md,5,"## 🜃 Connected Glyphs
+
+- [[anacostia_vault_structure_v2_proposed]]
+- [[avm_script_map]]
+- [[agent_command_lexicon]]
+- [[avm_architecture_map]]
+- [[avm_syndicate_prompt_templates]]
+",append,,'war_council/anacostia_vault_structure' -> [[anacostia_vault_structure_v2_proposed]] (resolved_title) | 'avm_archivist/avm_script_map' -> [[avm_script_map]] (unresolved_fallback_filename) | 'avm_syndicate/agent_command_lexicon' -> [[agent_command_lexicon]] (unresolved_fallback_filename) | 'avm_syndicate/avm_architecture_map' -> [[avm_architecture_map]] (unresolved_fallback_filename) | 'avm_syndicate/avm_syndicate_prompt_templates' -> [[avm_syndicate_prompt_templates]] (unresolved_fallback_filename)
+war_council/avm_syndicate/documentation/ibm_agentic_alchemy.md,2,"## 🜃 Connected Glyphs
+
+- [[scholarly_reading_journey]]
+- [[terzo_case_notes]]
+",append,,'reading_journal/scholarly_reading_journey.md' -> [[scholarly_reading_journey]] (unresolved_fallback_filename) | 'ai_ethics/enterprise_agentic_case_studies/terzo_case_notes.md' -> [[terzo_case_notes]] (unresolved_fallback_filename)
+war_council/avm_syndicate/operations/avm_emission_law.md,3,"## 🜃 Connected Glyphs
+
+- [[handoff_failover_law]]
+- [[agent_command_lexicon]]
+- [[phase_four_execution_resumption_gate]]
+",append,,'war_council/avm_syndicate/operations/handoff_failover_law.md' -> [[handoff_failover_law]] (resolved_title) | 'war_council/avm_syndicate/systems/agent_command_lexicon.md' -> [[agent_command_lexicon]] (resolved_no_title_fallback_filename) | 'war_council/avm_syndicate/operations/phase_four_execution_resumption_gate.md' -> [[phase_four_execution_resumption_gate]] (resolved_title)
+war_council/avm_syndicate/prompt_engineering/prompt_templates.md,3,"## 🜃 Connected Glyphs
+
+- [[avm_syndicate_gameplan]]
+- [[avm_syndicate_tone_primer]]
+- [[session_context]]
+",append,,'avm_syndicate_gameplan' -> [[avm_syndicate_gameplan]] (unresolved_fallback_filename) | 'avm_syndicate_tone_primer' -> [[avm_syndicate_tone_primer]] (unresolved_fallback_filename) | 'session_context' -> [[session_context]] (unresolved_fallback_filename)
+war_council/avm_syndicate/readme.md,2,"## 🜃 Connected Glyphs
+
+- [[vault_cognition_protocol]]
+- [[anacostia_vault_structure_v2_proposed]]
+",append,,'war_council/vault_cognition_protocol.md' -> [[vault_cognition_protocol]] (resolved_title) | 'war_council/anacostia_vault_structure.md' -> [[anacostia_vault_structure_v2_proposed]] (resolved_title)
+war_council/avm_syndicate/script_companions/forge_inventory_index.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'sankofa_spine.md' -> [[sankofa_spine]] (unresolved_fallback_filename)
+war_council/avm_syndicate/script_companions/scorpyun_annotator.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'sankofa_spine.md' -> [[sankofa_spine]] (unresolved_fallback_filename)
+war_council/avm_syndicate/summaries/archived_jan_2026/echo_inside_tencents_deal_to_use_nvidias_best_ai_chips__20251228.md,2,"## 🜃 Connected Glyphs
+
+- [[python_learning_path]]
+- [[summary_styles_guide]]
+",append,,'python_learning_path' -> [[python_learning_path]] (unresolved_fallback_filename) | 'summary_styles_guide' -> [[summary_styles_guide]] (unresolved_fallback_filename)
+war_council/avm_syndicate/summaries/archived_jan_2026/echo_lion_trend_report_20251228 1.md,2,"## 🜃 Connected Glyphs
+
+- [[python_learning_path]]
+- [[summary_styles_guide]]
+",append,,'python_learning_path' -> [[python_learning_path]] (unresolved_fallback_filename) | 'summary_styles_guide' -> [[summary_styles_guide]] (unresolved_fallback_filename)
+war_council/avm_syndicate/summaries/archived_jan_2026/echo_lion_trend_report_20251228.md,2,"## 🜃 Connected Glyphs
+
+- [[python_learning_path]]
+- [[summary_styles_guide]]
+",append,,'python_learning_path' -> [[python_learning_path]] (unresolved_fallback_filename) | 'summary_styles_guide' -> [[summary_styles_guide]] (unresolved_fallback_filename)
+war_council/avm_syndicate/summaries/archived_jan_2026/echo_lion_trend_report_20251228_2025_12_28.md,2,"## 🜃 Connected Glyphs
+
+- [[python_learning_path]]
+- [[echo_prophet_protocol_manifest]]
+",append,,'python_learning_path' -> [[python_learning_path]] (unresolved_fallback_filename) | 'echo_prophet_protocol_manifest' -> [[echo_prophet_protocol_manifest]] (unresolved_fallback_filename)
+war_council/avm_syndicate/systems/quotes_field_canonical_encoding_rule.md,1,"## 🜃 Connected Glyphs
+
+- [[sankofa_spine]]
+",append,,'sankofa_spine.md' -> [[sankofa_spine]] (unresolved_fallback_filename)
+war_council/documentation/vault_ops/to_do_list.md,3,"## 🜃 Connected Glyphs
+
+- [[agent_identity_schema]]
+- [[avm_syndicate_gameplan]]
+- [[douglass_operating_system]]
+",append,,'war_council/avm_syndicate/agents/protocols/agent_identity_schema.md' -> [[agent_identity_schema]] (resolved_title) | 'war_council/avm_syndicate/agents/avm_syndicate_gameplan.md' -> [[avm_syndicate_gameplan]] (resolved_title) | 'douglass_os/douglass_operating_system.md' -> [[douglass_operating_system]] (unresolved_fallback_filename)
+war_council/documentation/writing_protocols/vault_summary_transmission_protocols.md,3,"## 🜃 Connected Glyphs
+
+- [[summary_styles_guide]]
+- [[vault_cognition_protocol]]
+- [[vs_enc_enforcement_checklist]]
+",append,,'war_council/documentation/writing_protocols/summary_styles_guide.md' -> [[summary_styles_guide]] (resolved_title) | 'war_council/avm_syndicate/systems/vault_cognition_protocol.md' -> [[vault_cognition_protocol]] (unresolved_fallback_filename) | 'war_council/avm_syndicate/agents/protocols/vs_enc_enforcement_checklist.md' -> [[vs_enc_enforcement_checklist]] (resolved_title)
+war_council/readme.md,2,"## 🜃 Connected Glyphs
+
+- [[vault_cognition_protocol]]
+- [[anacostia_vault_structure_v2_proposed]]
+",append,,'war_council/vault_cognition_protocol.md' -> [[vault_cognition_protocol]] (resolved_title) | 'war_council/anacostia_vault_structure.md' -> [[anacostia_vault_structure_v2_proposed]] (resolved_title)
+war_council/war_council_dashboard.md,4,"## 🜃 Connected Glyphs
+
+- [[war_council]]
+- [[sankofa_spine]]
+- [[session_context]]
+- [[avm_syndicate_gameplan]]
+",append,,'war_council.md' -> [[war_council]] (unresolved_fallback_filename) | 'sankofa_spine.md' -> [[sankofa_spine]] (unresolved_fallback_filename) | 'session_context.md' -> [[session_context]] (unresolved_fallback_filename) | 'avm_syndicate_gameplan.md' -> [[avm_syndicate_gameplan]] (unresolved_fallback_filename)
